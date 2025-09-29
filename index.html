@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gerenciador de Pedidos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Gerenciador de Pedidos</h1>
+        <span class="sub">R2D2 aqui — controle tudo ✨</span>
+      </div>
+      <div class="user-area">
+        <span id="userEmail" class="user-email"></span>
+        <button id="signOutBtn" class="btn ghost">Sair</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <aside class="form-area">
+        <div class="card">
+          <h2>Adicionar Pedido</h2>
+          <form id="pedidoForm">
+            <label>Nome
+              <input id="nome" required maxlength="80" />
+            </label>
+
+            <label>Número do cliente
+              <input id="numero" inputmode="numeric" placeholder="opcional" />
+            </label>
+
+            <label>Entrega ou Retirada?
+              <select id="tipoEntrega">
+                <option value="entrega">Entrega</option>
+                <option value="retirada">Retirada</option>
+              </select>
+            </label>
+
+            <label id="enderecoLabel">Endereço
+              <input id="endereco" />
+            </label>
+
+            <label>Itens do pedido
+              <textarea id="itens" rows="3" required placeholder="Ex: 2x pizza, 1x refrigerante"></textarea>
+            </label>
+
+            <label>Horário
+              <input id="horario" type="datetime-local" required />
+            </label>
+
+            <label>Valor total (R$)
+              <input id="valor" type="number" step="0.01" min="0" required />
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Salvar pedido</button>
+              <button type="button" id="clearForm" class="btn ghost">Limpar</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card small-calendar">
+          <h3>Filtro por data</h3>
+          <div id="calendar"></div>
+          <div class="calendar-controls">
+            <button id="prevMonth" class="btn ghost">‹</button>
+            <div id="monthYear"></div>
+            <button id="nextMonth" class="btn ghost">›</button>
+          </div>
+          <div style="margin-top:8px;">
+            <button id="clearFilter" class="btn ghost">Limpar filtro</button>
+          </div>
+        </div>
+
+        <div class="card sort-controls">
+          <h3>Ordenar</h3>
+          <div class="row">
+            <label>
+              <input type="radio" name="order" value="asc" checked /> Crescente
+            </label>
+            <label>
+              <input type="radio" name="order" value="desc" /> Decrescente
+            </label>
+          </div>
+        </div>
+      </aside>
+
+      <section class="list-area">
+        <div class="card">
+          <div class="list-header">
+            <h2>Pedidos</h2>
+            <div id="countInfo" class="muted">—</div>
+          </div>
+          <ul id="pedidosList" class="pedidos-list"></ul>
+          <div id="emptyMsg" class="empty-msg">Nenhum pedido encontrado.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h2>Faça login</h2>
+      <p>Login obrigatório. Use sua conta Google autorizada.</p>
+      <button id="googleSignIn" class="btn google">Entrar com Google</button>
+      <div id="loginMsg" class="muted small" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- Modular scripts -->
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
