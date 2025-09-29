@@ -1,7 +1,8 @@
-// script.js (module)
+// script.js (module) — versão corrigida
 import { auth, provider, db } from './firebase.js';
 import {
   signInWithPopup,
+  signInWithRedirect,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
@@ -15,17 +16,17 @@ import {
   where,
   doc,
   deleteDoc,
-  Timestamp,
-  getDocs,
-  startAfter
+  Timestamp
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 /* === CONFIGURÁVEL: lista de e-mails autorizados ===
    Edite esta lista para controlar quem pode logar. */
 const ALLOWED_EMAILS = [
-  "danialmeida1803@gmail.com", // seu e-mail (exemplo)
+  "danialmeida1803@gmail.com", // exemplo
   // "outro@exemplo.com"
 ];
+// cria um set em lowercase pra comparação segura
+const ALLOWED_SET = new Set(ALLOWED_EMAILS.map(e => e.toLowerCase()));
 
 /* --- Elements --- */
 const loginScreen = document.getElementById('loginScreen');
@@ -67,15 +68,22 @@ calendarDate.setDate(1);
 /* Firestore reference */
 const pedidosCol = collection(db, 'pedidos');
 
-/* --- Auth --- */
-googleSignInBtn.addEventListener('click', async () => {
+/* --- Auth: sign in with popup + fallback to redirect --- */
+async function trySignIn() {
   try {
     await signInWithPopup(auth, provider);
-    // onAuthStateChanged cuida do resto
   } catch (err) {
-    loginMsg.textContent = 'Erro no login: ' + err.message;
+    // se popup for bloqueado ou ocorrer erro, tenta redirect
+    console.warn('signInWithPopup falhou, tentando signInWithRedirect:', err.message || err);
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (err2) {
+      loginMsg.textContent = 'Erro no login: ' + (err2.message || err2);
+    }
   }
-});
+}
+
+googleSignInBtn.addEventListener('click', trySignIn);
 
 signOutBtn.addEventListener('click', async () => {
   await signOut(auth);
@@ -84,8 +92,8 @@ signOutBtn.addEventListener('click', async () => {
 /* Observa autenticação */
 onAuthStateChanged(auth, user => {
   if (user) {
-    const email = user.email || '';
-    if (!ALLOWED_EMAILS.includes(email.toLowerCase())) {
+    const email = (user.email || '').toLowerCase();
+    if (!ALLOWED_SET.has(email)) {
       // caso não autorizado, desloga e mostra mensagem
       signOut(auth).then(() => {
         loginMsg.textContent = 'Conta não autorizada. Peça permissão ao administrador.';
@@ -96,7 +104,7 @@ onAuthStateChanged(auth, user => {
     }
 
     // autorizado
-    userEmailEl.textContent = email;
+    userEmailEl.textContent = user.email || '';
     loginScreen.style.display = 'none';
     appEl.classList.remove('hidden');
     initRealtimeListener();
@@ -193,14 +201,13 @@ function initRealtimeListener(){
     console.error('Listener erro:', err);
   });
 
-  // also update when ordering or filter changes by re-subscribing
-  // We'll provide helper functions to refresh
+  // helper para re-subscrever quando filtro/ordem mudarem
   window.__refreshPedidos = () => {
     if (unsubscribe) unsubscribe();
     const q2 = buildQuery();
     unsubscribe = onSnapshot(q2, snapshot => {
       renderPedidos(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }, err => { console.error('Listener erro:', err); });
   };
 }
 
@@ -215,7 +222,6 @@ function renderPedidos(items){
   emptyMsg.style.display = 'none';
   countInfo.textContent = `${items.length} pedido(s)`;
 
-  // convert Timestamp to Date for display
   items.forEach(item => {
     const li = document.createElement('li');
     li.className = 'pedido-item';
@@ -331,16 +337,6 @@ document.querySelectorAll('input[name="order"]').forEach(r => {
 
 /* init calendar on load */
 renderCalendar();
-
-/* initial listener will be activated after auth; if user is already authed,
-   onAuthStateChanged triggered earlier will call initRealtimeListener */
-
-/* small utility for deleting doc reference in render (needs doc import) */
-import { doc as docRef } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-function doc(dbRef, col, id) {
-  // shim to use deleteDoc(doc(db,'pedidos',id))
-  return docRef(dbRef, col, id);
-}
 
 /* show login screen initially until auth resolved */
 loginScreen.style.display = 'flex';
