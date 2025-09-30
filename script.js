@@ -647,15 +647,15 @@ function printTicket(item) {
   .ticket { width:80mm; padding:8px 8px 12px 8px; box-sizing:border-box; }
   header { text-align:center; margin-bottom:6px; }
   .brand-title { font-size:14px; font-weight:700; letter-spacing:1px; }
-  .meta { font-size:11px; color:#666; margin-bottom:8px; display:flex;flex-direction:column;gap:2px; align-items:flex-start;}
+  .meta { font-size:11px; color:#000; margin-bottom:8px; display:flex;flex-direction:column;gap:2px; align-items:flex-start;}
   .meta .row { display:flex; justify-content:space-between; width:100%; }
   .items { font-size:12px; margin-bottom:8px; }
   .items .line { display:flex; justify-content:space-between; margin:6px 0; }
   .items .desc { max-width:58mm; word-break:break-word; }
   .total { display:flex; justify-content:space-between; font-weight:700; font-size:13px; border-top:1px dashed #ccc; padding-top:8px; margin-top:6px; }
-  .footer { margin-top:10px; font-size:10px; text-align:center; color:#666; }
+  .footer { margin-top:10px; font-size:10px; text-align:center; color:#000; }
   .quote { margin-top:10px; font-style:italic; font-size:11px; text-align:center; color:#333; }
-  .ticket .small { font-size:10px; color:#666; text-align:center; margin-top:6px; }
+  .ticket .small { font-size:10px; color:#000; text-align:center; margin-top:6px; }
   /* ensure good print rendering */
   img.logo { max-width:70mm; height:auto; display:block; margin:0 auto 6px auto; }
   /* Hide scrollbars etc */
