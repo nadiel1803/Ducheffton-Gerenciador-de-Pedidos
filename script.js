@@ -636,26 +636,26 @@ function printTicket(item) {
   @page { size: 80mm auto; margin: 3mm; }
   body {
     margin:0;
-    font-family: "Courier New", monospace;
+    font-family: "Arial", sans-serif;
     font-size: 13px;
+    font-weight: bold;
     color:#000;
     background:white;
   }
   .ticket {
     width: 100%;
-    max-width: 80mm; /* nunca passa da largura do papel */
+    max-width: 80mm;
     margin: 0 auto;
     padding: 10px;
     box-sizing: border-box;
   }
-  header { text-align:center; margin-bottom:10px; }
-  .brand-title { font-size:1.2em; font-weight:bold; }
-  .meta { font-size:1em; margin-bottom:10px; }
-  .items { font-size:1.05em; margin-bottom:12px; }
+  header { text-align:center; margin-bottom:12px; }
+  .brand-title { font-size:1.3em; }
+  .meta { font-size:1em; margin-bottom:12px; }
+  .items { font-size:1.05em; margin-bottom:14px; }
   .items .desc { margin-bottom:4px; word-break:break-word; }
   .total {
     font-size:1.2em;
-    font-weight:bold;
     border-top:1px dashed #000;
     padding-top:8px;
     margin-top:8px;
@@ -663,15 +663,11 @@ function printTicket(item) {
     justify-content:space-between;
   }
   .quote {
-    margin-top:12px;
+    margin-top:16px;
     font-style:italic;
-    font-size:1em;
+    font-size:0.85em;
     text-align:center;
-  }
-  .footer {
-    margin-top:10px;
-    font-size:0.9em;
-    text-align:center;
+    font-weight: normal;
   }
 </style>
 </head>
@@ -696,7 +692,6 @@ function printTicket(item) {
       <div>${escapeHtml(valorStr)}</div>
     </div>
     <div class="quote">"Se Deus é por nós, quem será contra nós?" Rm. 8:31</div>
-    <div class="footer">Impresso em ${new Date().toLocaleString('pt-BR')}</div>
   </div>
 <script>
 window.onload = function(){
@@ -708,3 +703,4 @@ window.onload = function(){
   win.document.write(html);
   win.document.close();
 }
+
