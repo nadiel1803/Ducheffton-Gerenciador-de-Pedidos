@@ -628,11 +628,11 @@ function printTicket(item) {
   const win = window.open('', '_blank');
   const html = `
 <!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<title>Pedido</title>
-<style>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Recibo</title>
+      <style>
         @page { size: 80mm auto; margin: 0; }
         body { font-family: monospace; margin: 6px; color: #000; background: #fff; font-size: 12px; line-height: 1.2; }
         .center { text-align:center; }
@@ -642,37 +642,33 @@ function printTicket(item) {
         .small { font-size:11px; }
         .right { text-align:right; }
       </style>
-</head>
-<body>
-  <div class="ticket">
-    <header>
-      <div class="brand-title">PEDIDO - DuCheffton</div>
-    </header>
-    <div class="meta">
-      <div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div>
-      <div><strong>Cliente:</strong> ${numero}</div>
-      <div><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div>
-      ${item.endereco ? `<div><strong>Endereço:</strong> ${endereco}</div>` : ''}
-      <div><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div>
-    </div>
-    <div class="items">
-      <div><strong>Itens:</strong></div>
-      <div class="desc">${itens}</div>
-    </div>
-    <div class="total">
-      <div>Total:</div>
-      <div>${escapeHtml(valorStr)}</div>
-    </div>
-    <div class="quote">"Se Deus é por nós, quem será contra nós?" Rm. 8:31</div>
-    <div class="footer">Impresso em ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-<script>
-window.onload = function(){
-  setTimeout(function(){ window.print(); }, 300);
-};
-</script>
-</body>
-</html>`;
+    </head>
+    <body>
+      <div class="center bold">DuCheffton</div>
+      <div class="center small">Pedido - Recibo</div>
+      <hr>
+      <div><strong>Cliente:</strong> ${escapeHtml(p.nome)}</div>
+      <div><strong>Data:</strong> ${escapeHtml(p.data)}  <strong>Hora:</strong> ${escapeHtml(p.horario)}</div>
+      <div><strong>Nº:</strong> ${escapeHtml(p.numero)}  <strong>Pag:</strong> ${escapeHtml(p.pagamento)}</div>
+      <div><strong>Entrega:</strong> ${escapeHtml(p.entrega)}</div>
+      ${p.entrega === 'Sim' ? `<div><strong>Endereço:</strong> ${escapeHtml(p.endereco)}</div>` : ''}
+      <hr>
+      <div class="items">${escapeHtml(p.itens)}</div>
+      <hr>
+      <div class="right bold">TOTAL: R$ ${p.valor}</div>
+      <div class="small">Pago: ${escapeHtml(p.pago)}</div>
+      <hr>
+      <div class="center small">Obrigado! Volte sempre :)</div>
+      <script>
+        window.onload = function() {
+          setTimeout(() => {
+            window.print();
+            setTimeout(() => { window.close(); }, 600);
+          }, 200);
+        };
+      </script>
+    </body>
+  </html>`;
   win.document.write(html);
   win.document.close();
 }
