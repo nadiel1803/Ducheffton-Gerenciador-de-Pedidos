@@ -14,7 +14,7 @@
         <h1>Gerenciador de Pedidos</h1>
       </div>
       <div class="user-area">
-        <span id="userEmail" class="user-email"></span>
+        <span id="userLabel" class="user-email">Conectado</span>
         <button id="signOutBtn" class="btn ghost">Sair</button>
       </div>
     </header>
@@ -102,11 +102,28 @@
     </main>
   </div>
 
+  <!-- Login screen via PIN -->
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
-      <h2>Faça login</h2>
-      <p>Login obrigatório. Use sua conta Google autorizada.</p>
-      <button id="googleSignIn" class="btn google">Entrar com Google</button>
+      <h2>Entrar com PIN</h2>
+      <p>Insira seu PIN de 4 dígitos para acessar o gerenciador.</p>
+
+      <div class="pin-input-row">
+        <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" />
+      </div>
+
+      <div style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;justify-content:center;">
+          <input type="checkbox" id="rememberCheck" />
+          <span class="small muted">Manter conectado (no navegador)</span>
+        </label>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+        <button id="pinSubmit" class="btn primary">Entrar</button>
+        <button id="pinHelp" class="btn ghost">Ajuda</button>
+      </div>
+
       <div id="loginMsg" class="muted small" style="margin-top:12px;"></div>
     </div>
   </div>

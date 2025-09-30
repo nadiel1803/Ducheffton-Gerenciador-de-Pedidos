@@ -1,12 +1,5 @@
-// script.js (module) — versão corrigida e otimizada
-import { auth, provider, db } from './firebase.js';
-import {
-  signInWithPopup,
-  signInWithRedirect,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
+// script.js — versão com PIN simples (substitui Auth)
+import { db } from './firebase.js';
 import {
   collection,
   addDoc,
@@ -19,24 +12,27 @@ import {
   Timestamp
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* === CONFIGURÁVEL: lista de e-mails autorizados ===
-   Edite esta lista para controlar quem pode logar. */
-const ALLOWED_EMAILS = [
-  "danialmeida1803@gmail.com", // exemplo
-  // "outro@exemplo.com"
-];
-// cria um set em lowercase pra comparação segura
-const ALLOWED_SET = new Set(ALLOWED_EMAILS.map(e => e.toLowerCase()));
+/* ============================
+   AQUI: defina o PIN desejado
+   ============================
+   Troque '1234' pelo PIN que você quiser.
+   OBS: esse PIN fica no código (visível no navegador).
+*/
+const APP_PIN = '1803'; // <-- altere aqui
 
-/* --- Elements --- */
+/* --- elementos (login) --- */
 const loginScreen = document.getElementById('loginScreen');
-const googleSignInBtn = document.getElementById('googleSignIn');
+const pinInput = document.getElementById('pinInput');
+const pinSubmit = document.getElementById('pinSubmit');
+const pinHelp = document.getElementById('pinHelp');
+const rememberCheck = document.getElementById('rememberCheck');
 const loginMsg = document.getElementById('loginMsg');
 
 const appEl = document.getElementById('app');
-const userEmailEl = document.getElementById('userEmail');
+const userLabel = document.getElementById('userLabel');
 const signOutBtn = document.getElementById('signOutBtn');
 
+/* --- Elements (form) --- */
 const pedidoForm = document.getElementById('pedidoForm');
 const nomeEl = document.getElementById('nome');
 const numeroEl = document.getElementById('numero');
@@ -58,7 +54,6 @@ const monthYearEl = document.getElementById('monthYear');
 const calendarEl = document.getElementById('calendar');
 const clearFilterBtn = document.getElementById('clearFilter');
 
-// Mobile navigation elements
 const menuToggleBtn = document.getElementById('menuToggle');
 const overlay = document.getElementById('overlay');
 const formArea = document.getElementById('formArea');
@@ -74,68 +69,79 @@ calendarDate.setDate(1);
 const pedidosCol = collection(db, 'pedidos');
 
 /* --- Mobile Navigation --- */
-function closeNav() {
-  document.body.classList.remove('nav-open');
-}
-
-function openNav() {
-  document.body.classList.add('nav-open');
-}
+function closeNav() { document.body.classList.remove('nav-open'); }
+function openNav() { document.body.classList.add('nav-open'); }
 
 menuToggleBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (document.body.classList.contains('nav-open')) {
-    closeNav();
-  } else {
-    openNav();
-  }
+  if (document.body.classList.contains('nav-open')) closeNav(); else openNav();
 });
-
 overlay.addEventListener('click', closeNav);
-formArea.addEventListener('click', (e) => e.stopPropagation()); // Impede que cliques dentro do menu o fechem
+formArea.addEventListener('click', (e) => e.stopPropagation());
 
-
-/* --- Auth: sign in with popup + fallback to redirect --- */
-async function trySignIn() {
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    console.warn('signInWithPopup falhou, tentando signInWithRedirect:', err.message || err);
-    try {
-      await signInWithRedirect(auth, provider);
-    } catch (err2) {
-      loginMsg.textContent = 'Erro no login: ' + (err2.message || err2);
-    }
-  }
+/* --- Simple PIN auth --- */
+function isLoggedIn() {
+  // if remember checked, we store in localStorage; else sessionStorage
+  return sessionStorage.getItem('loggedIn') === '1' || localStorage.getItem('loggedIn') === '1';
 }
 
-googleSignInBtn.addEventListener('click', trySignIn);
+function setLoggedIn(remember = false) {
+  if (remember) localStorage.setItem('loggedIn', '1');
+  else sessionStorage.setItem('loggedIn', '1');
+}
 
-signOutBtn.addEventListener('click', async () => {
-  await signOut(auth);
-});
+function clearLogin() {
+  localStorage.removeItem('loggedIn');
+  sessionStorage.removeItem('loggedIn');
+}
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    const email = (user.email || '').toLowerCase();
-    if (!ALLOWED_SET.has(email)) {
-      signOut(auth).then(() => {
-        loginMsg.textContent = 'Conta não autorizada. Peça permissão ao administrador.';
-        loginScreen.style.display = 'flex';
-        appEl.classList.add('hidden');
-      });
-      return;
-    }
+/* try auto-login on load */
+if (isLoggedIn()) {
+  showApp();
+} else {
+  showLogin();
+}
 
-    userEmailEl.textContent = user.email || '';
-    loginScreen.style.display = 'none';
-    appEl.classList.remove('hidden');
-    initRealtimeListener();
+pinSubmit.addEventListener('click', () => {
+  const pin = (pinInput.value || '').trim();
+  if (!pin) {
+    loginMsg.textContent = 'Digite o PIN.';
+    return;
+  }
+  if (pin === APP_PIN) {
+    setLoggedIn(rememberCheck.checked);
+    loginMsg.textContent = '';
+    pinInput.value = '';
+    showApp();
   } else {
-    loginScreen.style.display = 'flex';
-    appEl.classList.add('hidden');
+    loginMsg.textContent = 'PIN incorreto.';
   }
 });
+
+pinInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') pinSubmit.click();
+});
+
+pinHelp.addEventListener('click', () => {
+  alert('O PIN está definido dentro do arquivo script.js, na constante APP_PIN. Mude lá se quiser.');
+});
+
+signOutBtn.addEventListener('click', () => {
+  clearLogin();
+  showLogin();
+});
+
+/* --- UI show/hide --- */
+function showLogin() {
+  loginScreen.style.display = 'flex';
+  appEl.classList.add('hidden');
+}
+
+function showApp() {
+  loginScreen.style.display = 'none';
+  appEl.classList.remove('hidden');
+  initRealtimeListener();
+}
 
 /* --- Form behaviors --- */
 tipoEntregaEl.addEventListener('change', () => {
@@ -200,7 +206,7 @@ function clearForm(){
   tipoEntregaEl.dispatchEvent(new Event('change'));
 }
 
-/* --- Real-time listener com filtros/ordenação --- */
+/* --- Realtime listener com filtros/ordenação --- */
 let unsubscribe = null;
 
 function initRealtimeListener(){
@@ -358,7 +364,5 @@ document.querySelectorAll('input[name="order"]').forEach(r => {
 
 /* init calendar on load */
 renderCalendar();
-
-loginScreen.style.display = 'flex';
 
 console.log('%cR2D2: gerenciador carregado — boa sorte!', 'color: #e53935; font-weight:700');

@@ -124,3 +124,28 @@ textarea{resize:vertical}
   .menu-toggle{display:block;}
   .brand{flex:1;text-align:center;}
 }
+
+/* ============================
+   Styles para a tela de login
+   ============================ */
+.login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45));
+  z-index:9999;padding:20px;
+}
+.login-card{
+  width:100%;max-width:420px;background:var(--card-bg);padding:20px;border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.25);text-align:center;border:1px solid rgba(0,0,0,0.06);
+}
+.login-card h2{margin:0 0 6px 0}
+.login-card p{margin:0 0 12px 0;color:var(--muted)}
+
+.pin-input-row{display:flex;justify-content:center;margin-top:8px}
+#pinInput{
+  width:220px;text-align:center;font-size:1.2rem;padding:10px;border-radius:10px;border:1px solid #ddd;
+  letter-spacing:6px;
+}
+
+@media (max-width:480px){
+  #pinInput{width:160px}
+}
