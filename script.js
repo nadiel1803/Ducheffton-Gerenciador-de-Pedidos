@@ -115,12 +115,10 @@ function clearLogin() {
 
 /* try auto-login on load */
 if (isLoggedIn()) {
-  showApp();          // mostra app
-  initRealtimeListener(); // garante que pedidos carreguem após refresh
+  showApp(); // Mostra o app (que já inicializa o listener)
 } else {
   showLogin();
 }
-
 
 pinSubmit.addEventListener('click', () => {
   const pin = (pinInput.value || '').trim();
@@ -340,8 +338,6 @@ if (editBackdrop) {
   editBackdrop.addEventListener('click', (e) => {
     // ignore clicks on backdrop
     e.stopPropagation();
-    // optionally show a small hint
-    // alert('Para cancelar, use o botão "Cancelar" ou "✕" (evite clicar fora para não perder dados).');
   });
 }
 
@@ -429,7 +425,6 @@ editForm.addEventListener('submit', async (e) => {
       valor
     });
 
-    // after save, close modal and refresh listener will update UI
     hideModal(true);
   } catch (err) {
     alert('Erro ao atualizar: ' + err.message);
@@ -482,7 +477,6 @@ function renderPedidos(items){
     btnEdit.className = 'btn ghost';
     btnEdit.textContent = 'Editar';
     btnEdit.addEventListener('click', async () => {
-      // fetch latest doc to avoid editing stale data
       try {
         const dref = doc(db, 'pedidos', item.id);
         const snap = await getDoc(dref);
@@ -510,7 +504,6 @@ function renderPedidos(items){
     btnDelete.className = 'btn ghost';
     btnDelete.textContent = 'Deletar';
     btnDelete.addEventListener('click', async () => {
-      // If editing same item, be extra cautious
       if (editState.open && editIdEl.value === item.id) {
         const sure = confirm('Você está editando este pedido agora — deletar enquanto edita pode causar perda de dados. Deseja realmente deletar?');
         if (!sure) return;
