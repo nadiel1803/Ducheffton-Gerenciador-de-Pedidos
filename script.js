@@ -703,4 +703,3 @@ window.onload = function(){
   win.document.write(html);
   win.document.close();
 }
-
