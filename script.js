@@ -115,10 +115,12 @@ function clearLogin() {
 
 /* try auto-login on load */
 if (isLoggedIn()) {
-  showApp();
+  showApp();          // mostra app
+  initRealtimeListener(); // garante que pedidos carreguem após refresh
 } else {
   showLogin();
 }
+
 
 pinSubmit.addEventListener('click', () => {
   const pin = (pinInput.value || '').trim();
