@@ -77,6 +77,10 @@ textarea{resize:vertical}
 .pedido-meta{font-size:0.85rem;color:var(--muted);margin-top:6px;word-wrap:break-word;}
 .pedido-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 
+/* New action styles (row) */
+.pedido-actions .actions-row{display:flex;gap:8px;flex-direction:row;align-items:center}
+
+/* small/copy */
 .small{font-size:0.85rem}
 .muted{color:var(--muted)}
 
@@ -149,3 +153,57 @@ textarea{resize:vertical}
 @media (max-width:480px){
   #pinInput{width:160px}
 }
+
+/* ============================
+   Modal Edit styles
+   ============================ */
+.modal{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  z-index:1200;
+}
+.modal.hidden{display:none}
+.modal-backdrop{
+  position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;
+  /* clicking backdrop will be ignored in JS */
+}
+.modal-dialog{
+  position:relative;z-index:1202;max-width:520px;width:94%;background:var(--card-bg);
+  border-radius:12px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,0.35);border:1px solid rgba(0,0,0,0.06);
+}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.modal-body{display:flex;flex-direction:column;gap:8px}
+.modal-actions{margin-top:10px;justify-content:flex-end}
+
+/* make modal form inputs slightly larger */
+.modal-body input, .modal-body textarea, .modal-body select {font-size:1rem;padding:10px}
+
+/* ============================
+   Print / Ticket styles (applied in the print window)
+   ============================ */
+/* These are mostly injected into the print window via JS.
+   Put defaults here for dev/test printing from main window too. */
+.ticket {
+  width: 80mm;
+  font-family: "Courier New", Courier, monospace;
+  color: #111;
+  padding: 8px 8px 14px 8px;
+  box-sizing: border-box;
+}
+.ticket header { text-align:center; margin-bottom:6px; }
+.ticket .brand-title { font-size: 14px; font-weight:700; letter-spacing:1px; }
+.ticket .meta { font-size:11px; color:var(--muted); margin-bottom:8px; }
+.ticket .items { font-size:12px; margin-bottom:8px; }
+.ticket .items .line { display:flex; justify-content:space-between; margin:6px 0; }
+.ticket .total { display:flex; justify-content:space-between; font-weight:700; font-size:13px; border-top:1px dashed #ccc; padding-top:8px; margin-top:6px; }
+.ticket .footer { margin-top:10px; font-size:10px; text-align:center; color:var(--muted); }
+.ticket .quote { margin-top:10px; font-style:italic; font-size:11px; text-align:center; }
+
+/* Print page size for 80mm ticket */
+@media print {
+  @page { size: 80mm auto; margin: 3mm; }
+  body * { visibility: visible; }
+  body { background: white; }
+}
+
+/* small tweaks */
+.muted { color: #6b6b6b; }

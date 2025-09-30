@@ -9,7 +9,9 @@ import {
   where,
   doc,
   deleteDoc,
-  Timestamp
+  Timestamp,
+  updateDoc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 /* ============================
@@ -57,6 +59,22 @@ const clearFilterBtn = document.getElementById('clearFilter');
 const menuToggleBtn = document.getElementById('menuToggle');
 const overlay = document.getElementById('overlay');
 const formArea = document.getElementById('formArea');
+
+/* --- Edit modal elements --- */
+const editModal = document.getElementById('editModal');
+const editBackdrop = editModal ? editModal.querySelector('.modal-backdrop') : null;
+const editCloseBtn = document.getElementById('editCloseBtn');
+const editForm = document.getElementById('editForm');
+const editIdEl = document.getElementById('editId');
+const editNome = document.getElementById('editNome');
+const editNumero = document.getElementById('editNumero');
+const editTipoEntrega = document.getElementById('editTipoEntrega');
+const editEnderecoLabel = document.getElementById('editEnderecoLabel');
+const editEndereco = document.getElementById('editEndereco');
+const editItens = document.getElementById('editItens');
+const editHorario = document.getElementById('editHorario');
+const editValor = document.getElementById('editValor');
+const cancelEditBtn = document.getElementById('cancelEdit');
 
 let selectedDateFilter = null; // JS Date (midnight) or null
 let orderDirection = 'asc';
@@ -244,6 +262,182 @@ function initRealtimeListener(){
   };
 }
 
+/* --- Edit modal logic and safety --- */
+let editState = {
+  open: false,
+  originalData: null,
+  hasUnsavedChanges: false
+};
+
+function openEditModal(item) {
+  editIdEl.value = item.id;
+  editNome.value = item.nome || '';
+  editNumero.value = item.numero || '';
+  editTipoEntrega.value = item.tipo || 'entrega';
+  if (item.tipo === 'entrega') {
+    editEnderecoLabel.style.display = 'block';
+    editEndereco.required = true;
+    editEndereco.value = item.endereco || '';
+  } else {
+    editEnderecoLabel.style.display = 'none';
+    editEndereco.required = false;
+    editEndereco.value = '';
+  }
+  editItens.value = item.itens || '';
+  // horario may be Timestamp
+  const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
+  if (horarioDate) {
+    // format to yyyy-MM-ddThh:mm for datetime-local
+    const pad = n => String(n).padStart(2, '0');
+    const val = `${horarioDate.getFullYear()}-${pad(horarioDate.getMonth()+1)}-${pad(horarioDate.getDate())}T${pad(horarioDate.getHours())}:${pad(horarioDate.getMinutes())}`;
+    editHorario.value = val;
+  } else {
+    editHorario.value = '';
+  }
+  editValor.value = (item.valor != null) ? Number(item.valor).toFixed(2) : '';
+
+  // store original data snapshot to compare for unsaved changes
+  editState.originalData = {
+    nome: editNome.value,
+    numero: editNumero.value,
+    tipo: editTipoEntrega.value,
+    endereco: editEndereco.value,
+    itens: editItens.value,
+    horario: editHorario.value,
+    valor: editValor.value
+  };
+  editState.hasUnsavedChanges = false;
+  showModal();
+}
+
+/* Show modal */
+function showModal() {
+  editModal.classList.remove('hidden');
+  editModal.setAttribute('aria-hidden', 'false');
+  editState.open = true;
+  // add beforeunload guard
+  window.addEventListener('beforeunload', handleBeforeUnload);
+}
+
+/* Hide modal with safety check */
+function hideModal(force = false) {
+  if (!force && editState.hasUnsavedChanges) {
+    const ok = confirm('Existem alterações não salvas. Deseja descartar as alterações?');
+    if (!ok) return;
+  }
+  editModal.classList.add('hidden');
+  editModal.setAttribute('aria-hidden', 'true');
+  editState.open = false;
+  editState.originalData = null;
+  editState.hasUnsavedChanges = false;
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+}
+
+/* Do not allow backdrop click to close modal (prevenir perda acidental) */
+if (editBackdrop) {
+  editBackdrop.addEventListener('click', (e) => {
+    // ignore clicks on backdrop
+    e.stopPropagation();
+    // optionally show a small hint
+    // alert('Para cancelar, use o botão "Cancelar" ou "✕" (evite clicar fora para não perder dados).');
+  });
+}
+
+/* Close button behavior */
+if (editCloseBtn) {
+  editCloseBtn.addEventListener('click', () => hideModal(false));
+}
+if (cancelEditBtn) {
+  cancelEditBtn.addEventListener('click', () => hideModal(false));
+}
+
+/* Monitor fields for unsaved changes */
+[editNome, editNumero, editTipoEntrega, editEndereco, editItens, editHorario, editValor].forEach(inp => {
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    const current = {
+      nome: editNome.value,
+      numero: editNumero.value,
+      tipo: editTipoEntrega.value,
+      endereco: editEndereco.value,
+      itens: editItens.value,
+      horario: editHorario.value,
+      valor: editValor.value
+    };
+    editState.hasUnsavedChanges = JSON.stringify(current) !== JSON.stringify(editState.originalData);
+  });
+});
+
+/* react to tipoEntrega change in edit modal */
+if (editTipoEntrega) {
+  editTipoEntrega.addEventListener('change', () => {
+    if (editTipoEntrega.value === 'entrega') {
+      editEnderecoLabel.style.display = 'block';
+      editEndereco.required = true;
+    } else {
+      editEnderecoLabel.style.display = 'none';
+      editEndereco.required = false;
+      editEndereco.value = '';
+    }
+  });
+}
+
+/* beforeunload handler */
+function handleBeforeUnload(e) {
+  if (editState.open && editState.hasUnsavedChanges) {
+    const confirmationMessage = 'Existem alterações não salvas no pedido. Tem certeza que deseja sair?';
+    e.returnValue = confirmationMessage; // Gecko + others
+    return confirmationMessage;
+  }
+}
+
+/* Save edit */
+editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = editIdEl.value;
+  const nome = editNome.value.trim();
+  const numero = editNumero.value.trim();
+  const tipo = editTipoEntrega.value;
+  const endereco = editEndereco.value.trim();
+  const itens = editItens.value.trim();
+  const horarioStr = editHorario.value;
+  const valor = parseFloat(editValor.value);
+
+  if (!nome || !itens || !horarioStr || isNaN(valor)) {
+    alert('Preencha os campos obrigatórios.');
+    return;
+  }
+
+  const horarioDate = new Date(horarioStr);
+  const horarioTS = Timestamp.fromDate(horarioDate);
+
+  try {
+    const saveBtn = editForm.querySelector('button[type="submit"]');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+
+    const docRef = doc(db, 'pedidos', id);
+    await updateDoc(docRef, {
+      nome,
+      numero: numero || null,
+      tipo,
+      endereco: tipo === 'entrega' ? endereco : null,
+      itens,
+      horario: horarioTS,
+      valor
+    });
+
+    // after save, close modal and refresh listener will update UI
+    hideModal(true);
+  } catch (err) {
+    alert('Erro ao atualizar: ' + err.message);
+  } finally {
+    const saveBtn = editForm.querySelector('button[type="submit"]');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Salvar alterações';
+  }
+});
+
 /* --- Render pedidos --- */
 function renderPedidos(items){
   pedidosList.innerHTML = '';
@@ -278,18 +472,60 @@ function renderPedidos(items){
 
     const actions = document.createElement('div');
     actions.className = 'pedido-actions';
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'actions-row';
+
+    // Edit button
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'btn ghost';
+    btnEdit.textContent = 'Editar';
+    btnEdit.addEventListener('click', async () => {
+      // fetch latest doc to avoid editing stale data
+      try {
+        const dref = doc(db, 'pedidos', item.id);
+        const snap = await getDoc(dref);
+        if (snap.exists()) {
+          const data = { id: snap.id, ...snap.data() };
+          openEditModal(data);
+        } else {
+          alert('Pedido não encontrado (pode ter sido removido).');
+        }
+      } catch (err) {
+        alert('Erro ao abrir edição: ' + err.message);
+      }
+    });
+
+    // Print button
+    const btnPrint = document.createElement('button');
+    btnPrint.className = 'btn ghost';
+    btnPrint.textContent = 'Imprimir';
+    btnPrint.addEventListener('click', () => {
+      printTicket(item);
+    });
+
+    // Delete button
     const btnDelete = document.createElement('button');
     btnDelete.className = 'btn ghost';
     btnDelete.textContent = 'Deletar';
     btnDelete.addEventListener('click', async () => {
-      if (confirm('Deletar este pedido?')) {
-        try {
-          await deleteDoc(doc(db, 'pedidos', item.id));
-        } catch (err) { alert('Erro: ' + err.message); }
+      // If editing same item, be extra cautious
+      if (editState.open && editIdEl.value === item.id) {
+        const sure = confirm('Você está editando este pedido agora — deletar enquanto edita pode causar perda de dados. Deseja realmente deletar?');
+        if (!sure) return;
+      } else {
+        if (!confirm('Deletar este pedido?')) return;
       }
+
+      try {
+        await deleteDoc(doc(db, 'pedidos', item.id));
+      } catch (err) { alert('Erro: ' + err.message); }
     });
 
-    actions.appendChild(btnDelete);
+    actionsRow.appendChild(btnEdit);
+    actionsRow.appendChild(btnPrint);
+    actionsRow.appendChild(btnDelete);
+    actions.appendChild(actionsRow);
+
     li.appendChild(main);
     li.appendChild(actions);
     pedidosList.appendChild(li);
@@ -366,3 +602,117 @@ document.querySelectorAll('input[name="order"]').forEach(r => {
 renderCalendar();
 
 console.log('%cR2D2: gerenciador carregado — boa sorte!', 'color: #e53935; font-weight:700');
+
+/* ============================
+   Print ticket function
+   ============================ */
+
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function printTicket(item) {
+  try {
+    // prepare values
+    const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
+    const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '-';
+    const numero = item.numero ? escapeHtml(item.numero) : '-';
+    const endereco = item.endereco ? escapeHtml(item.endereco) : '-';
+    const itens = escapeHtml(item.itens).replace(/\n/g, '<br>');
+    const valorStr = `R$ ${Number(item.valor || 0).toFixed(2)}`;
+
+    // open a printable window (about:blank)
+    const win = window.open('', '_blank', 'toolbar=0,location=0,menubar=0');
+    if (!win) {
+      alert('Bloqueador de pop-ups impediu a abertura da impressão. Permita pop-ups para este site.');
+      return;
+    }
+
+    // Compose ticket HTML + styles optimized for 80mm
+    const html = `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Ticket - ${escapeHtml(item.nome || 'Pedido')}</title>
+<style>
+  @page { size: 80mm auto; margin: 3mm; }
+  body { margin:0; padding:0; -webkit-print-color-adjust: exact; font-family: "Helvetica Neue", Arial, sans-serif; background:white; color:#111; }
+  .ticket { width:80mm; padding:8px 8px 12px 8px; box-sizing:border-box; }
+  header { text-align:center; margin-bottom:6px; }
+  .brand-title { font-size:14px; font-weight:700; letter-spacing:1px; }
+  .meta { font-size:11px; color:#666; margin-bottom:8px; display:flex;flex-direction:column;gap:2px; align-items:flex-start;}
+  .meta .row { display:flex; justify-content:space-between; width:100%; }
+  .items { font-size:12px; margin-bottom:8px; }
+  .items .line { display:flex; justify-content:space-between; margin:6px 0; }
+  .items .desc { max-width:58mm; word-break:break-word; }
+  .total { display:flex; justify-content:space-between; font-weight:700; font-size:13px; border-top:1px dashed #ccc; padding-top:8px; margin-top:6px; }
+  .footer { margin-top:10px; font-size:10px; text-align:center; color:#666; }
+  .quote { margin-top:10px; font-style:italic; font-size:11px; text-align:center; color:#333; }
+  .ticket .small { font-size:10px; color:#666; text-align:center; margin-top:6px; }
+  /* ensure good print rendering */
+  img.logo { max-width:70mm; height:auto; display:block; margin:0 auto 6px auto; }
+  /* Hide scrollbars etc */
+  ::-webkit-scrollbar { display:none; }
+</style>
+</head>
+<body>
+  <div class="ticket">
+    <header>
+      <div class="brand-title">DuCheffton - Pedido</div>
+      <div class="small">Obrigado pela preferência!</div>
+    </header>
+
+    <div class="meta">
+      <div class="row"><div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div><div><strong>Valor:</strong> ${escapeHtml(valorStr)}</div></div>
+      <div class="row"><div><strong>Cliente:</strong> ${numero}</div><div><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div></div>
+      ${item.endereco ? `<div class="row"><div style="width:100%;"><strong>Endereço:</strong> ${endereco}</div></div>` : ''}
+      <div class="row"><div><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div></div>
+    </div>
+
+    <div class="items">
+      <div style="font-weight:700;margin-bottom:6px;">Itens</div>
+      <div class="line"><div class="desc">${itens}</div></div>
+    </div>
+
+    <div class="total">
+      <div>Total</div>
+      <div>${escapeHtml(valorStr)}</div>
+    </div>
+
+    <div class="quote">"Se Deus é por nós, quem será contra nós?" Rm. 8:31</div>
+
+    <div class="footer">
+      <div class="small">Gerenciador DuCheffton — ${new Date().toLocaleString('pt-BR')}</div>
+    </div>
+  </div>
+
+  <script>
+    // Auto print when loaded
+    window.onload = function(){
+      setTimeout(function(){
+        window.print();
+        // Do not automatically close in case user wants to save as PDF / cancel; user agent dependent.
+      }, 300);
+    };
+  </script>
+</body>
+</html>
+    `;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+    // focus window to ensure print dialog appears in some browsers
+    win.focus();
+  } catch (err) {
+    alert('Erro na impressão: ' + err.message);
+  }
+}

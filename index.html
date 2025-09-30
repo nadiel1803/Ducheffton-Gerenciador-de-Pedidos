@@ -128,6 +128,57 @@
     </div>
   </div>
 
+  <!-- EDIT MODAL (seguro) -->
+  <div id="editModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <header class="modal-header">
+        <h3 id="editModalTitle">Editar Pedido</h3>
+        <button id="editCloseBtn" class="btn ghost" title="Fechar">✕</button>
+      </header>
+
+      <form id="editForm" class="modal-body">
+        <input type="hidden" id="editId" />
+
+        <label>Nome
+          <input id="editNome" required maxlength="80" />
+        </label>
+
+        <label>Número do cliente
+          <input id="editNumero" inputmode="numeric" placeholder="opcional" />
+        </label>
+
+        <label>Entrega ou Retirada?
+          <select id="editTipoEntrega">
+            <option value="entrega">Entrega</option>
+            <option value="retirada">Retirada</option>
+          </select>
+        </label>
+
+        <label id="editEnderecoLabel">Endereço
+          <input id="editEndereco" />
+        </label>
+
+        <label>Itens do pedido
+          <textarea id="editItens" rows="3" required placeholder="Ex: 2x pizza, 1x refrigerante"></textarea>
+        </label>
+
+        <label>Horário
+          <input id="editHorario" type="datetime-local" required />
+        </label>
+
+        <label>Valor total (R$)
+          <input id="editValor" type="number" step="0.01" min="0" required />
+        </label>
+
+        <div class="form-actions modal-actions">
+          <button type="submit" class="btn primary">Salvar alterações</button>
+          <button type="button" id="cancelEdit" class="btn ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="firebase.js"></script>
   <script type="module" src="script.js"></script>
 </body>
