@@ -9,6 +9,7 @@
 <body>
   <div id="app" class="hidden">
     <header class="topbar">
+      <button id="menuToggle" class="btn ghost menu-toggle">☰</button>
       <div class="brand">
         <h1>Gerenciador de Pedidos</h1>
       </div>
@@ -19,7 +20,8 @@
     </header>
 
     <main class="main">
-      <aside class="form-area">
+      <div id="overlay" class="overlay"></div>
+      <aside id="formArea" class="form-area">
         <div class="card">
           <h2>Adicionar Pedido</h2>
           <form id="pedidoForm">
@@ -109,7 +111,6 @@
     </div>
   </div>
 
-  <!-- Modular scripts -->
   <script type="module" src="firebase.js"></script>
   <script type="module" src="script.js"></script>
 </body>

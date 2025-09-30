@@ -1,5 +1,5 @@
 :root{
-  --bg: #ffffff;
+  --bg: #f7f7f7;
   --accent1: #e53935; /* vermelho forte */
   --accent2: #ff8a00; /* laranja */
   --muted: #666;
@@ -11,13 +11,16 @@
 }
 
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:#111}
+html,body{height:100%;margin:0;background:var(--bg);color:#111;overflow-x:hidden;}
 .hidden{display:none}
 
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:18px 20px;border-bottom:1px solid #eee;background:linear-gradient(90deg, rgba(255,138,0,0.05), rgba(229,57,53,0.03));
+  padding:18px 20px;border-bottom:1px solid #eee;
+  background:#fff;
+  position:sticky;top:0;z-index:100;
 }
+.brand{text-align:left;}
 .brand h1{margin:0;font-size:1.2rem;color:var(--accent1)}
 .brand .sub{display:block;font-size:0.8rem;color:var(--muted)}
 
@@ -31,7 +34,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:#111}
 }
 
 /* layout: form area and list area */
-.form-area{flex:0 0 360px;max-width:420px}
+.form-area{flex:0 0 360px;max-width:420px;transition: transform 0.3s ease-in-out;}
 .list-area{flex:1;min-width:280px}
 
 /* cards */
@@ -56,9 +59,11 @@ textarea{resize:vertical}
 .form-actions{display:flex;gap:8px;margin-top:10px}
 .btn{
   padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:600;
+  transition: background-color 0.2s;
 }
 .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white}
 .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06)}
+.btn.ghost:hover{background-color:rgba(0,0,0,0.04);}
 .btn.google{background:#fff;border:1px solid #ccc;padding:10px 14px}
 
 /* list */
@@ -69,7 +74,7 @@ textarea{resize:vertical}
 }
 .pedido-main{max-width:72%}
 .pedido-main h4{margin:0;font-size:1rem}
-.pedido-meta{font-size:0.85rem;color:var(--muted);margin-top:6px}
+.pedido-meta{font-size:0.85rem;color:var(--muted);margin-top:6px;word-wrap:break-word;}
 .pedido-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 
 .small{font-size:0.85rem}
@@ -81,19 +86,41 @@ textarea{resize:vertical}
 .small-calendar #calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .day{
   padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid transparent;
+  transition: transform 0.2s;
 }
 .day:hover{transform:translateY(-2px)}
 .day.today{box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.06)}
 .day.selected{background:linear-gradient(180deg,var(--accent2),var(--accent1));color:white}
 
-/* responsive - mobile: form above list */
-@media (max-width: 880px){
-  .main{flex-direction:column;padding:12px}
-  .form-area{width:100%;max-width:none}
-  .list-area{width:100%}
-  .topbar{padding:12px}
-}
-
-/* tiny tweaks */
 .list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .row{display:flex;gap:12px;align-items:center}
+.calendar-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+
+/* Mobile menu toggle */
+.menu-toggle{display:none;font-size:1.5rem;padding:0 12px;}
+.overlay{
+  display:none; position:fixed; top:0;left:0;
+  width:100%;height:100%; background:rgba(0,0,0,0.4); z-index:199;
+}
+
+/* responsive - mobile: form above list */
+@media (max-width: 880px){
+  body.nav-open .form-area{transform: translateX(0);}
+  body.nav-open .overlay{display:block;}
+
+  .main{flex-direction:column;padding:12px}
+  .form-area{
+    position:fixed; top:0; left:0;
+    height:100%; width:85%; max-width:360px;
+    z-index:200; background:var(--bg);
+    padding:18px; margin-bottom:0;
+    overflow-y:auto;
+    transform: translateX(-105%);
+    border-right:1px solid #eee;
+  }
+  .list-area{width:100%}
+  .topbar{padding:12px}
+  .user-email{display:none;} /* Oculta email no mobile pra economizar espaço */
+  .menu-toggle{display:block;}
+  .brand{flex:1;text-align:center;}
+}

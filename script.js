@@ -1,4 +1,4 @@
-// script.js (module) — versão corrigida
+// script.js (module) — versão corrigida e otimizada
 import { auth, provider, db } from './firebase.js';
 import {
   signInWithPopup,
@@ -58,6 +58,11 @@ const monthYearEl = document.getElementById('monthYear');
 const calendarEl = document.getElementById('calendar');
 const clearFilterBtn = document.getElementById('clearFilter');
 
+// Mobile navigation elements
+const menuToggleBtn = document.getElementById('menuToggle');
+const overlay = document.getElementById('overlay');
+const formArea = document.getElementById('formArea');
+
 let selectedDateFilter = null; // JS Date (midnight) or null
 let orderDirection = 'asc';
 
@@ -68,12 +73,33 @@ calendarDate.setDate(1);
 /* Firestore reference */
 const pedidosCol = collection(db, 'pedidos');
 
+/* --- Mobile Navigation --- */
+function closeNav() {
+  document.body.classList.remove('nav-open');
+}
+
+function openNav() {
+  document.body.classList.add('nav-open');
+}
+
+menuToggleBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (document.body.classList.contains('nav-open')) {
+    closeNav();
+  } else {
+    openNav();
+  }
+});
+
+overlay.addEventListener('click', closeNav);
+formArea.addEventListener('click', (e) => e.stopPropagation()); // Impede que cliques dentro do menu o fechem
+
+
 /* --- Auth: sign in with popup + fallback to redirect --- */
 async function trySignIn() {
   try {
     await signInWithPopup(auth, provider);
   } catch (err) {
-    // se popup for bloqueado ou ocorrer erro, tenta redirect
     console.warn('signInWithPopup falhou, tentando signInWithRedirect:', err.message || err);
     try {
       await signInWithRedirect(auth, provider);
@@ -89,12 +115,10 @@ signOutBtn.addEventListener('click', async () => {
   await signOut(auth);
 });
 
-/* Observa autenticação */
 onAuthStateChanged(auth, user => {
   if (user) {
     const email = (user.email || '').toLowerCase();
     if (!ALLOWED_SET.has(email)) {
-      // caso não autorizado, desloga e mostra mensagem
       signOut(auth).then(() => {
         loginMsg.textContent = 'Conta não autorizada. Peça permissão ao administrador.';
         loginScreen.style.display = 'flex';
@@ -103,13 +127,11 @@ onAuthStateChanged(auth, user => {
       return;
     }
 
-    // autorizado
     userEmailEl.textContent = user.email || '';
     loginScreen.style.display = 'none';
     appEl.classList.remove('hidden');
     initRealtimeListener();
   } else {
-    // sem user
     loginScreen.style.display = 'flex';
     appEl.classList.add('hidden');
   }
@@ -125,7 +147,6 @@ tipoEntregaEl.addEventListener('change', () => {
     enderecoLabel.style.display = 'none';
   }
 });
-// inicial
 tipoEntregaEl.dispatchEvent(new Event('change'));
 
 clearFormBtn.addEventListener('click', clearForm);
@@ -149,6 +170,10 @@ pedidoForm.addEventListener('submit', async (e) => {
   const horarioTS = Timestamp.fromDate(horarioDate);
 
   try {
+    const saveButton = pedidoForm.querySelector('button[type="submit"]');
+    saveButton.disabled = true;
+    saveButton.textContent = 'Salvando...';
+
     await addDoc(pedidosCol, {
       nome,
       numero: numero || null,
@@ -160,8 +185,13 @@ pedidoForm.addEventListener('submit', async (e) => {
       criadoEm: Timestamp.now()
     });
     clearForm();
+    closeNav(); // Fecha o menu mobile ao salvar
   } catch (err) {
     alert('Erro ao salvar: ' + err.message);
+  } finally {
+    const saveButton = pedidoForm.querySelector('button[type="submit"]');
+    saveButton.disabled = false;
+    saveButton.textContent = 'Salvar pedido';
   }
 });
 
@@ -176,11 +206,9 @@ let unsubscribe = null;
 function initRealtimeListener(){
   if (unsubscribe) unsubscribe();
 
-  // função que constrói query de acordo com filtro e ordenação
   const buildQuery = () => {
     let q = null;
     if (selectedDateFilter) {
-      // filtramos por dia: >= start && < next day
       const start = new Date(selectedDateFilter);
       start.setHours(0,0,0,0);
       const end = new Date(start);
@@ -201,7 +229,6 @@ function initRealtimeListener(){
     console.error('Listener erro:', err);
   });
 
-  // helper para re-subscrever quando filtro/ordem mudarem
   window.__refreshPedidos = () => {
     if (unsubscribe) unsubscribe();
     const q2 = buildQuery();
@@ -236,7 +263,7 @@ function renderPedidos(items){
     meta.className = 'pedido-meta';
     const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
     const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '-';
-    meta.innerHTML = `<div><strong>Entrega:</strong> ${item.tipo}</div>
+    meta.innerHTML = `<div><strong>Tipo:</strong> ${item.tipo}</div>
                       <div><strong>Horário:</strong> ${horarioStr}</div>
                       <div><strong>Valor:</strong> R$ ${Number(item.valor).toFixed(2)}</div>
                       <div><strong>Itens:</strong> ${item.itens}</div>
@@ -272,12 +299,9 @@ function renderCalendar(){
   monthYearEl.textContent = calendarDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   const firstDay = new Date(year, month, 1);
-  const startWeekday = firstDay.getDay(); // 0=domingo ... 6=sábado
-
-  // days in month
+  const startWeekday = firstDay.getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  // add blanks for leading days (we'll treat week start as Sun)
   for (let i=0;i<startWeekday;i++){
     const cell = document.createElement('div');
     cell.className = 'day muted';
@@ -293,19 +317,15 @@ function renderCalendar(){
     const today = new Date();
     if (thisDate.toDateString() === today.toDateString()) cell.classList.add('today');
 
-    // if equals selected date filter, mark selected
     if (selectedDateFilter) {
-      const sel = new Date(selectedDateFilter);
-      if (sel.toDateString() === thisDate.toDateString()) cell.classList.add('selected');
+      if (selectedDateFilter.toDateString() === thisDate.toDateString()) cell.classList.add('selected');
     }
 
     cell.addEventListener('click', () => {
-      // set selectedDateFilter to this date (midnight)
-      const sel = new Date(year, month, d);
-      selectedDateFilter = sel;
-      // re-init listener (re-subscribe)
+      selectedDateFilter = new Date(year, month, d);
       if (window.__refreshPedidos) window.__refreshPedidos();
       renderCalendar();
+      closeNav(); // Fecha o menu ao selecionar data
     });
 
     calendarEl.appendChild(cell);
@@ -325,6 +345,7 @@ clearFilterBtn.addEventListener('click', () => {
   selectedDateFilter = null;
   if (window.__refreshPedidos) window.__refreshPedidos();
   renderCalendar();
+  closeNav(); // Fecha o menu ao limpar filtro
 });
 
 /* --- Order controls --- */
@@ -338,8 +359,6 @@ document.querySelectorAll('input[name="order"]').forEach(r => {
 /* init calendar on load */
 renderCalendar();
 
-/* show login screen initially until auth resolved */
 loginScreen.style.display = 'flex';
 
-/* Friendly tip in console */
 console.log('%cR2D2: gerenciador carregado — boa sorte!', 'color: #e53935; font-weight:700');
