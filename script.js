@@ -633,41 +633,15 @@ function printTicket(item) {
 <meta charset="utf-8" />
 <title>Pedido</title>
 <style>
-  @page { size: 80mm auto; margin: 3mm; }
-  body {
-    margin:0;
-    font-family: "Courier New", monospace;
-    font-size: 13px;
-    color:#000;
-    background:white;
-  }
-  .ticket { width:80mm; padding:10px; box-sizing:border-box; }
-  header { text-align:center; margin-bottom:10px; }
-  .brand-title { font-size:16px; font-weight:bold; }
-  .meta { font-size:13px; margin-bottom:10px; }
-  .items { font-size:14px; margin-bottom:12px; }
-  .items .desc { margin-bottom:4px; }
-  .total {
-    font-size:16px;
-    font-weight:bold;
-    border-top:1px dashed #000;
-    padding-top:8px;
-    margin-top:8px;
-    display:flex;
-    justify-content:space-between;
-  }
-  .quote {
-    margin-top:12px;
-    font-style:italic;
-    font-size:13px;
-    text-align:center;
-  }
-  .footer {
-    margin-top:10px;
-    font-size:11px;
-    text-align:center;
-  }
-</style>
+        @page { size: 80mm auto; margin: 0; }
+        body { font-family: monospace; margin: 6px; color: #000; background: #fff; font-size: 12px; line-height: 1.2; }
+        .center { text-align:center; }
+        .bold { font-weight:700; }
+        hr { border:0; border-top:1px dashed #000; margin:6px 0; }
+        .items { margin-top:6px; white-space: pre-wrap; font-size:11px; }
+        .small { font-size:11px; }
+        .right { text-align:right; }
+      </style>
 </head>
 <body>
   <div class="ticket">
