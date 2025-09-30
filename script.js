@@ -628,48 +628,83 @@ function printTicket(item) {
   const win = window.open('', '_blank');
   const html = `
 <!doctype html>
-  <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Recibo</title>
-      <style>
-        @page { size: 80mm auto; margin: 0; }
-        body { font-family: monospace; margin: 6px; color: #000; background: #fff; font-size: 12px; line-height: 1.2; }
-        .center { text-align:center; }
-        .bold { font-weight:700; }
-        hr { border:0; border-top:1px dashed #000; margin:6px 0; }
-        .items { margin-top:6px; white-space: pre-wrap; font-size:11px; }
-        .small { font-size:11px; }
-        .right { text-align:right; }
-      </style>
-    </head>
-    <body>
-      <div class="center bold">DuCheffton</div>
-      <div class="center small">Pedido - Recibo</div>
-      <hr>
-      <div><strong>Cliente:</strong> ${escapeHtml(p.nome)}</div>
-      <div><strong>Data:</strong> ${escapeHtml(p.data)}  <strong>Hora:</strong> ${escapeHtml(p.horario)}</div>
-      <div><strong>Nº:</strong> ${escapeHtml(p.numero)}  <strong>Pag:</strong> ${escapeHtml(p.pagamento)}</div>
-      <div><strong>Entrega:</strong> ${escapeHtml(p.entrega)}</div>
-      ${p.entrega === 'Sim' ? `<div><strong>Endereço:</strong> ${escapeHtml(p.endereco)}</div>` : ''}
-      <hr>
-      <div class="items">${escapeHtml(p.itens)}</div>
-      <hr>
-      <div class="right bold">TOTAL: R$ ${p.valor}</div>
-      <div class="small">Pago: ${escapeHtml(p.pago)}</div>
-      <hr>
-      <div class="center small">Obrigado! Volte sempre :)</div>
-      <script>
-        window.onload = function() {
-          setTimeout(() => {
-            window.print();
-            setTimeout(() => { window.close(); }, 600);
-          }, 200);
-        };
-      </script>
-    </body>
-  </html>`;
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pedido</title>
+<style>
+  @page { size: 80mm auto; margin: 3mm; }
+  body {
+    margin:0;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    color:#000;
+    background:white;
+  }
+  .ticket {
+    width: 100%;
+    max-width: 80mm; /* nunca passa da largura do papel */
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  header { text-align:center; margin-bottom:10px; }
+  .brand-title { font-size:1.2em; font-weight:bold; }
+  .meta { font-size:1em; margin-bottom:10px; }
+  .items { font-size:1.05em; margin-bottom:12px; }
+  .items .desc { margin-bottom:4px; word-break:break-word; }
+  .total {
+    font-size:1.2em;
+    font-weight:bold;
+    border-top:1px dashed #000;
+    padding-top:8px;
+    margin-top:8px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .quote {
+    margin-top:12px;
+    font-style:italic;
+    font-size:1em;
+    text-align:center;
+  }
+  .footer {
+    margin-top:10px;
+    font-size:0.9em;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+  <div class="ticket">
+    <header>
+      <div class="brand-title">PEDIDO - DuCheffton</div>
+    </header>
+    <div class="meta">
+      <div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div>
+      <div><strong>Cliente:</strong> ${numero}</div>
+      <div><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div>
+      ${item.endereco ? `<div><strong>Endereço:</strong> ${endereco}</div>` : ''}
+      <div><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div>
+    </div>
+    <div class="items">
+      <div><strong>Itens:</strong></div>
+      <div class="desc">${itens}</div>
+    </div>
+    <div class="total">
+      <div>Total:</div>
+      <div>${escapeHtml(valorStr)}</div>
+    </div>
+    <div class="quote">"Se Deus é por nós, quem será contra nós?" Rm. 8:31</div>
+    <div class="footer">Impresso em ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+<script>
+window.onload = function(){
+  setTimeout(function(){ window.print(); }, 300);
+};
+</script>
+</body>
+</html>`;
   win.document.write(html);
   win.document.close();
 }
-
