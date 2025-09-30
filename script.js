@@ -76,8 +76,10 @@ const editHorario = document.getElementById('editHorario');
 const editValor = document.getElementById('editValor');
 const cancelEditBtn = document.getElementById('cancelEdit');
 
+// --- Variáveis de Estado Global ---
 let selectedDateFilter = null; // JS Date (midnight) or null
 let orderDirection = 'asc';
+let unsubscribe = null; // <<-- A VARIÁVEL FOI MOVIDA PARA CÁ
 
 /* calendar state */
 let calendarDate = new Date();
@@ -225,8 +227,6 @@ function clearForm(){
 }
 
 /* --- Realtime listener com filtros/ordenação --- */
-let unsubscribe = null;
-
 function initRealtimeListener(){
   if (unsubscribe) unsubscribe();
 
