@@ -618,101 +618,88 @@ function escapeHtml(text) {
 }
 
 function printTicket(item) {
-  try {
-    // prepare values
-    const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
-    const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '-';
-    const numero = item.numero ? escapeHtml(item.numero) : '-';
-    const endereco = item.endereco ? escapeHtml(item.endereco) : '-';
-    const itens = escapeHtml(item.itens).replace(/\n/g, '<br>');
-    const valorStr = `R$ ${Number(item.valor || 0).toFixed(2)}`;
+  const horarioDate = item.horario?.toDate ? item.horario.toDate() : null;
+  const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR') : '-';
+  const numero = item.numero ? escapeHtml(item.numero) : '-';
+  const endereco = item.endereco ? escapeHtml(item.endereco) : '-';
+  const itens = escapeHtml(item.itens).replace(/\n/g, '<br>');
+  const valorStr = `R$ ${Number(item.valor || 0).toFixed(2)}`;
 
-    // open a printable window (about:blank)
-    const win = window.open('', '_blank', 'toolbar=0,location=0,menubar=0');
-    if (!win) {
-      alert('Bloqueador de pop-ups impediu a abertura da impressão. Permita pop-ups para este site.');
-      return;
-    }
-
-    // Compose ticket HTML + styles optimized for 80mm
-    const html = `
+  const win = window.open('', '_blank');
+  const html = `
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Ticket - ${escapeHtml(item.nome || 'Pedido')}</title>
+<title>Pedido</title>
 <style>
   @page { size: 80mm auto; margin: 3mm; }
-  body { margin:0; padding:0; -webkit-print-color-adjust: exact; font-family: "Helvetica Neue", Arial, sans-serif; background:white; color:#111; }
-  .ticket { width:80mm; padding:8px 8px 12px 8px; box-sizing:border-box; }
-  header { text-align:center; margin-bottom:6px; }
-  .brand-title { font-size:14px; font-weight:700; letter-spacing:1px; }
-  .meta { font-size:11px; color:#000; margin-bottom:8px; display:flex;flex-direction:column;gap:2px; align-items:flex-start;}
-  .meta .row { display:flex; justify-content:space-between; width:100%; }
-  .items { font-size:12px; margin-bottom:8px; }
-  .items .line { display:flex; justify-content:space-between; margin:6px 0; }
-  .items .desc { max-width:58mm; word-break:break-word; }
-  .total { display:flex; justify-content:space-between; font-weight:700; font-size:13px; border-top:1px dashed #ccc; padding-top:8px; margin-top:6px; }
-  .footer { margin-top:10px; font-size:10px; text-align:center; color:#000; }
-  .quote { margin-top:10px; font-style:italic; font-size:11px; text-align:center; color:#333; }
-  .ticket .small { font-size:10px; color:#000; text-align:center; margin-top:6px; }
-  /* ensure good print rendering */
-  img.logo { max-width:70mm; height:auto; display:block; margin:0 auto 6px auto; }
-  /* Hide scrollbars etc */
-  ::-webkit-scrollbar { display:none; }
+  body {
+    margin:0;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    color:#000;
+    background:white;
+  }
+  .ticket { width:80mm; padding:10px; box-sizing:border-box; }
+  header { text-align:center; margin-bottom:10px; }
+  .brand-title { font-size:16px; font-weight:bold; }
+  .meta { font-size:13px; margin-bottom:10px; }
+  .items { font-size:14px; margin-bottom:12px; }
+  .items .desc { margin-bottom:4px; }
+  .total {
+    font-size:16px;
+    font-weight:bold;
+    border-top:1px dashed #000;
+    padding-top:8px;
+    margin-top:8px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .quote {
+    margin-top:12px;
+    font-style:italic;
+    font-size:13px;
+    text-align:center;
+  }
+  .footer {
+    margin-top:10px;
+    font-size:11px;
+    text-align:center;
+  }
 </style>
 </head>
 <body>
   <div class="ticket">
     <header>
-      <div class="brand-title">DuCheffton - Pedido</div>
-      <div class="small">Obrigado pela preferência!</div>
+      <div class="brand-title">PEDIDO - DuCheffton</div>
     </header>
-
     <div class="meta">
-      <div class="row"><div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div><div><strong>Valor:</strong> ${escapeHtml(valorStr)}</div></div>
-      <div class="row"><div><strong>Cliente:</strong> ${numero}</div><div><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div></div>
-      ${item.endereco ? `<div class="row"><div style="width:100%;"><strong>Endereço:</strong> ${endereco}</div></div>` : ''}
-      <div class="row"><div><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div></div>
+      <div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div>
+      <div><strong>Cliente:</strong> ${numero}</div>
+      <div><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div>
+      ${item.endereco ? `<div><strong>Endereço:</strong> ${endereco}</div>` : ''}
+      <div><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div>
     </div>
-
     <div class="items">
-      <div style="font-weight:700;margin-bottom:6px;">Itens</div>
-      <div class="line"><div class="desc">${itens}</div></div>
+      <div><strong>Itens:</strong></div>
+      <div class="desc">${itens}</div>
     </div>
-
     <div class="total">
-      <div>Total</div>
+      <div>Total:</div>
       <div>${escapeHtml(valorStr)}</div>
     </div>
-
     <div class="quote">"Se Deus é por nós, quem será contra nós?" Rm. 8:31</div>
-
-    <div class="footer">
-      <div class="small">Gerenciador DuCheffton — ${new Date().toLocaleString('pt-BR')}</div>
-    </div>
+    <div class="footer">Impresso em ${new Date().toLocaleString('pt-BR')}</div>
   </div>
-
-  <script>
-    // Auto print when loaded
-    window.onload = function(){
-      setTimeout(function(){
-        window.print();
-        // Do not automatically close in case user wants to save as PDF / cancel; user agent dependent.
-      }, 300);
-    };
-  </script>
+<script>
+window.onload = function(){
+  setTimeout(function(){ window.print(); }, 300);
+};
+</script>
 </body>
-</html>
-    `;
-
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-
-    // focus window to ensure print dialog appears in some browsers
-    win.focus();
-  } catch (err) {
-    alert('Erro na impressão: ' + err.message);
-  }
+</html>`;
+  win.document.write(html);
+  win.document.close();
 }
+
