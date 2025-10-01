@@ -1,7 +1,7 @@
 :root{
   --bg: #f7f7f7;
-  --accent1: #1e88e5; /* azul mais moderno */
-  --accent2: #6a1b9a; /* roxo suave */
+  --accent1: #ff8a00; /* laranja vibrante */
+  --accent2: #ff5722; /* laranja avermelhado secundário */
   --muted: #666;
   --card-bg: #fff;
   --glass: rgba(0,0,0,0.03);
@@ -57,7 +57,7 @@ input,textarea,select{
   font-size:0.95rem;background:transparent;
   transition: box-shadow 0.12s, border-color 0.12s;
 }
-input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accent1); box-shadow:0 6px 20px rgba(30,136,229,0.08); }
+input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accent1); box-shadow:0 6px 20px rgba(255,138,0,0.08); }
 textarea{resize:vertical}
 
 .form-actions{display:flex;gap:8px;margin-top:10px}
@@ -72,6 +72,9 @@ textarea{resize:vertical}
 .btn:hover{ transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
 .btn:active{ transform: translateY(-1px); }
 .btn.google{background:#fff;border:1px solid #ccc;padding:10px 14px}
+
+/* Add button specific */
+.add-btn{ display:inline-flex; } /* aparece por padrão, mas escondemos no desktop via media query abaixo */
 
 /* danger */
 .btn.danger{ border-color: #ff5252; color: #b71c1c; }
@@ -144,14 +147,23 @@ textarea{resize:vertical}
   .topbar{padding:12px}
   .user-email{display:none;} /* Oculta email no mobile pra economizar espaço */
   .menu-toggle{display:none;} /* escondemos o menu-toggle */
+
   .brand{flex:1;text-align:left;}
   .header-actions{display:flex;gap:8px;align-items:center;}
 
-/* compact list on small screens: only show minimal info */
+  /* compact list on small screens: only show minimal info */
   .pedido-meta{display:none}
   .pedido-main h4{font-size:1.05rem}
   .pedido-main .compact-sub { font-size:0.85rem; color:var(--muted); margin-top:6px; }
   .pedido-actions{display:none} /* actions will be in modal */
+
+  /* garantir que o botão de adicionar apareça no mobile */
+  .add-btn{ display:inline-flex !important; }
+}
+
+/* esconder o botão de adicionar no desktop (computador) */
+@media (min-width: 881px){
+  .add-btn{ display:none !important; }
 }
 
 /* ============================
