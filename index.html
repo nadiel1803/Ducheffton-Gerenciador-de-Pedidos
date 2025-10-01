@@ -9,19 +9,26 @@
 <body>
   <div id="app" class="hidden">
     <header class="topbar">
-      <button id="menuToggle" class="btn ghost menu-toggle">☰</button>
+      <!-- NOTE: menuToggle foi "desativado" no mobile — agora usamos addPedidoBtn -->
+      <button id="menuToggle" class="btn ghost menu-toggle" aria-hidden="true">☰</button>
+
       <div class="brand">
         <h1>Gerenciador de Pedidos</h1>
       </div>
-      <div class="user-area">
-        <span id="userLabel" class="user-email">Conectado</span>
-        <button id="signOutBtn" class="btn ghost">Sair</button>
+
+      <div class="header-actions">
+        <button id="addPedidoBtn" class="btn primary add-btn">➕ Adicionar pedido</button>
+        <div class="user-area">
+          <span id="userLabel" class="user-email">Conectado</span>
+          <button id="signOutBtn" class="btn ghost">Sair</button>
+        </div>
       </div>
     </header>
 
     <main class="main">
       <div id="overlay" class="overlay"></div>
-      <aside id="formArea" class="form-area">
+
+      <aside id="formArea" class="form-area" aria-hidden="true">
         <div class="card">
           <h2>Adicionar Pedido</h2>
           <form id="pedidoForm">
@@ -56,6 +63,8 @@
               <input id="valor" type="number" step="0.01" min="0" required />
             </label>
 
+            <label class="paid-label"><input id="pago" type="checkbox" /> Pedido pago</label>
+
             <div class="form-actions">
               <button type="submit" class="btn primary">Salvar pedido</button>
               <button type="button" id="clearForm" class="btn ghost">Limpar</button>
@@ -85,6 +94,10 @@
             <label>
               <input type="radio" name="order" value="desc" /> Decrescente
             </label>
+          </div>
+
+          <div style="margin-top:10px;">
+            <button id="deleteDayBtn" class="btn ghost danger">Deletar pedidos deste dia</button>
           </div>
         </div>
       </aside>
@@ -125,6 +138,26 @@
       </div>
 
       <div id="loginMsg" class="muted small" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- VIEW MODAL (detalhes do pedido) -->
+  <div id="viewModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+      <header class="modal-header">
+        <h3 id="viewModalTitle">Detalhes do Pedido</h3>
+        <button id="viewCloseBtn" class="btn ghost" title="Fechar">✕</button>
+      </header>
+
+      <div class="modal-body view-body">
+        <div id="viewContent"></div>
+        <div class="modal-actions" style="margin-top:12px;">
+          <button id="viewEditBtn" class="btn ghost">Editar</button>
+          <button id="viewPrintBtn" class="btn ghost">Imprimir</button>
+          <button id="viewDeleteBtn" class="btn ghost danger">Deletar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -170,6 +203,8 @@
         <label>Valor total (R$)
           <input id="editValor" type="number" step="0.01" min="0" required />
         </label>
+
+        <label class="paid-label"><input id="editPago" type="checkbox" /> Pedido pago</label>
 
         <div class="form-actions modal-actions">
           <button type="submit" class="btn primary">Salvar alterações</button>

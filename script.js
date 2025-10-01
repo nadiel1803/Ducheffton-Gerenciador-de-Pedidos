@@ -1,4 +1,4 @@
-// script.js — versão com PIN simples (substitui Auth)
+// script.js — versão atualizada conforme pedido do usuário
 import { db } from './firebase.js';
 import {
   collection,
@@ -11,14 +11,13 @@ import {
   deleteDoc,
   Timestamp,
   updateDoc,
-  getDoc
+  getDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 /* ============================
    AQUI: defina o PIN desejado
    ============================
-   Troque '1234' pelo PIN que você quiser.
-   OBS: esse PIN fica no código (visível no navegador).
 */
 const APP_PIN = '1803'; // <-- altere aqui
 
@@ -34,6 +33,8 @@ const appEl = document.getElementById('app');
 const userLabel = document.getElementById('userLabel');
 const signOutBtn = document.getElementById('signOutBtn');
 
+const addPedidoBtn = document.getElementById('addPedidoBtn');
+
 /* --- Elements (form) --- */
 const pedidoForm = document.getElementById('pedidoForm');
 const nomeEl = document.getElementById('nome');
@@ -45,6 +46,7 @@ const itensEl = document.getElementById('itens');
 const horarioEl = document.getElementById('horario');
 const valorEl = document.getElementById('valor');
 const clearFormBtn = document.getElementById('clearForm');
+const pagoEl = document.getElementById('pago');
 
 const pedidosList = document.getElementById('pedidosList');
 const emptyMsg = document.getElementById('emptyMsg');
@@ -59,6 +61,16 @@ const clearFilterBtn = document.getElementById('clearFilter');
 const menuToggleBtn = document.getElementById('menuToggle');
 const overlay = document.getElementById('overlay');
 const formArea = document.getElementById('formArea');
+const deleteDayBtn = document.getElementById('deleteDayBtn');
+
+/* --- View modal elements --- */
+const viewModal = document.getElementById('viewModal');
+const viewBackdrop = viewModal ? viewModal.querySelector('.modal-backdrop') : null;
+const viewCloseBtn = document.getElementById('viewCloseBtn');
+const viewContent = document.getElementById('viewContent');
+const viewEditBtn = document.getElementById('viewEditBtn');
+const viewPrintBtn = document.getElementById('viewPrintBtn');
+const viewDeleteBtn = document.getElementById('viewDeleteBtn');
 
 /* --- Edit modal elements --- */
 const editModal = document.getElementById('editModal');
@@ -74,12 +86,13 @@ const editEndereco = document.getElementById('editEndereco');
 const editItens = document.getElementById('editItens');
 const editHorario = document.getElementById('editHorario');
 const editValor = document.getElementById('editValor');
+const editPago = document.getElementById('editPago');
 const cancelEditBtn = document.getElementById('cancelEdit');
 
 // --- Variáveis de Estado Global ---
 let selectedDateFilter = null; // JS Date (midnight) or null
 let orderDirection = 'asc';
-let unsubscribe = null; // <<-- A VARIÁVEL FOI MOVIDA PARA CÁ
+let unsubscribe = null; // listener
 
 /* calendar state */
 let calendarDate = new Date();
@@ -88,11 +101,29 @@ calendarDate.setDate(1);
 /* Firestore reference */
 const pedidosCol = collection(db, 'pedidos');
 
-/* --- Mobile Navigation --- */
-function closeNav() { document.body.classList.remove('nav-open'); }
-function openNav() { document.body.classList.add('nav-open'); }
+/* --- Mobile Navigation behavior --- */
+function closeNav() {
+  document.body.classList.remove('nav-open');
+  formArea.setAttribute('aria-hidden', 'true');
+}
+function openNav() {
+  document.body.classList.add('nav-open');
+  formArea.setAttribute('aria-hidden', 'false');
+}
+
+/* On mobile the add button opens the drawer; on desktop the form is visible so it just focuses */
+addPedidoBtn.addEventListener('click', () => {
+  if (window.innerWidth <= 880) {
+    openNav();
+  } else {
+    // scroll / focus on form on desktop
+    formArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    nomeEl.focus();
+  }
+});
 
 menuToggleBtn.addEventListener('click', (e) => {
+  // kept for backward compat but hidden in CSS for mobile
   e.stopPropagation();
   if (document.body.classList.contains('nav-open')) closeNav(); else openNav();
 });
@@ -101,7 +132,6 @@ formArea.addEventListener('click', (e) => e.stopPropagation());
 
 /* --- Simple PIN auth --- */
 function isLoggedIn() {
-  // if remember checked, we store in localStorage; else sessionStorage
   return sessionStorage.getItem('loggedIn') === '1' || localStorage.getItem('loggedIn') === '1';
 }
 
@@ -117,7 +147,7 @@ function clearLogin() {
 
 /* try auto-login on load */
 if (isLoggedIn()) {
-  showApp(); // Mostra o app (que já inicializa o listener)
+  showApp();
 } else {
   showLogin();
 }
@@ -156,7 +186,6 @@ function showLogin() {
   loginScreen.style.display = 'flex';
   appEl.classList.add('hidden');
 }
-
 function showApp() {
   loginScreen.style.display = 'none';
   appEl.classList.remove('hidden');
@@ -186,6 +215,7 @@ pedidoForm.addEventListener('submit', async (e) => {
   const itens = itensEl.value.trim();
   const horarioStr = horarioEl.value;
   const valor = parseFloat(valorEl.value);
+  const pago = !!pagoEl.checked;
 
   if (!nome || !itens || !horarioStr || isNaN(valor)) {
     alert('Preencha os campos obrigatórios.');
@@ -208,6 +238,7 @@ pedidoForm.addEventListener('submit', async (e) => {
       itens,
       horario: horarioTS,
       valor,
+      pago,
       criadoEm: Timestamp.now()
     });
     clearForm();
@@ -224,6 +255,7 @@ pedidoForm.addEventListener('submit', async (e) => {
 function clearForm(){
   pedidoForm.reset();
   tipoEntregaEl.dispatchEvent(new Event('change'));
+  pagoEl.checked = false;
 }
 
 /* --- Realtime listener com filtros/ordenação --- */
@@ -284,10 +316,8 @@ function openEditModal(item) {
     editEndereco.value = '';
   }
   editItens.value = item.itens || '';
-  // horario may be Timestamp
   const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
   if (horarioDate) {
-    // format to yyyy-MM-ddThh:mm for datetime-local
     const pad = n => String(n).padStart(2, '0');
     const val = `${horarioDate.getFullYear()}-${pad(horarioDate.getMonth()+1)}-${pad(horarioDate.getDate())}T${pad(horarioDate.getHours())}:${pad(horarioDate.getMinutes())}`;
     editHorario.value = val;
@@ -295,8 +325,8 @@ function openEditModal(item) {
     editHorario.value = '';
   }
   editValor.value = (item.valor != null) ? Number(item.valor).toFixed(2) : '';
+  editPago.checked = !!item.pago;
 
-  // store original data snapshot to compare for unsaved changes
   editState.originalData = {
     nome: editNome.value,
     numero: editNumero.value,
@@ -304,23 +334,21 @@ function openEditModal(item) {
     endereco: editEndereco.value,
     itens: editItens.value,
     horario: editHorario.value,
-    valor: editValor.value
+    valor: editValor.value,
+    pago: editPago.checked
   };
   editState.hasUnsavedChanges = false;
-  showModal();
+  showEditModal();
 }
 
-/* Show modal */
-function showModal() {
+/* Show / hide edit modal */
+function showEditModal() {
   editModal.classList.remove('hidden');
   editModal.setAttribute('aria-hidden', 'false');
   editState.open = true;
-  // add beforeunload guard
   window.addEventListener('beforeunload', handleBeforeUnload);
 }
-
-/* Hide modal with safety check */
-function hideModal(force = false) {
+function hideEditModal(force = false) {
   if (!force && editState.hasUnsavedChanges) {
     const ok = confirm('Existem alterações não salvas. Deseja descartar as alterações?');
     if (!ok) return;
@@ -333,24 +361,8 @@ function hideModal(force = false) {
   window.removeEventListener('beforeunload', handleBeforeUnload);
 }
 
-/* Do not allow backdrop click to close modal (prevenir perda acidental) */
-if (editBackdrop) {
-  editBackdrop.addEventListener('click', (e) => {
-    // ignore clicks on backdrop
-    e.stopPropagation();
-  });
-}
-
-/* Close button behavior */
-if (editCloseBtn) {
-  editCloseBtn.addEventListener('click', () => hideModal(false));
-}
-if (cancelEditBtn) {
-  cancelEditBtn.addEventListener('click', () => hideModal(false));
-}
-
-/* Monitor fields for unsaved changes */
-[editNome, editNumero, editTipoEntrega, editEndereco, editItens, editHorario, editValor].forEach(inp => {
+/* monitor fields for unsaved changes */
+[editNome, editNumero, editTipoEntrega, editEndereco, editItens, editHorario, editValor, editPago].forEach(inp => {
   if (!inp) return;
   inp.addEventListener('input', () => {
     const current = {
@@ -360,13 +372,13 @@ if (cancelEditBtn) {
       endereco: editEndereco.value,
       itens: editItens.value,
       horario: editHorario.value,
-      valor: editValor.value
+      valor: editValor.value,
+      pago: editPago.checked
     };
     editState.hasUnsavedChanges = JSON.stringify(current) !== JSON.stringify(editState.originalData);
   });
 });
 
-/* react to tipoEntrega change in edit modal */
 if (editTipoEntrega) {
   editTipoEntrega.addEventListener('change', () => {
     if (editTipoEntrega.value === 'entrega') {
@@ -380,16 +392,14 @@ if (editTipoEntrega) {
   });
 }
 
-/* beforeunload handler */
 function handleBeforeUnload(e) {
   if (editState.open && editState.hasUnsavedChanges) {
     const confirmationMessage = 'Existem alterações não salvas no pedido. Tem certeza que deseja sair?';
-    e.returnValue = confirmationMessage; // Gecko + others
+    e.returnValue = confirmationMessage;
     return confirmationMessage;
   }
 }
 
-/* Save edit */
 editForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = editIdEl.value;
@@ -400,6 +410,7 @@ editForm.addEventListener('submit', async (e) => {
   const itens = editItens.value.trim();
   const horarioStr = editHorario.value;
   const valor = parseFloat(editValor.value);
+  const pago = !!editPago.checked;
 
   if (!nome || !itens || !horarioStr || isNaN(valor)) {
     alert('Preencha os campos obrigatórios.');
@@ -422,16 +433,73 @@ editForm.addEventListener('submit', async (e) => {
       endereco: tipo === 'entrega' ? endereco : null,
       itens,
       horario: horarioTS,
-      valor
+      valor,
+      pago
     });
 
-    hideModal(true);
+    hideEditModal(true);
   } catch (err) {
     alert('Erro ao atualizar: ' + err.message);
   } finally {
     const saveBtn = editForm.querySelector('button[type="submit"]');
     saveBtn.disabled = false;
     saveBtn.textContent = 'Salvar alterações';
+  }
+});
+
+/* --- VIEW modal logic --- */
+let currentViewedItem = null;
+function openViewModal(item) {
+  currentViewedItem = item;
+  renderViewContent(item);
+  viewModal.classList.remove('hidden');
+  viewModal.setAttribute('aria-hidden', 'false');
+  window.addEventListener('keydown', viewKeyHandler);
+}
+function closeViewModal() {
+  viewModal.classList.add('hidden');
+  viewModal.setAttribute('aria-hidden', 'true');
+  currentViewedItem = null;
+  window.removeEventListener('keydown', viewKeyHandler);
+}
+viewCloseBtn.addEventListener('click', closeViewModal);
+if (viewBackdrop) viewBackdrop.addEventListener('click', (e) => { e.stopPropagation(); });
+
+function viewKeyHandler(e) {
+  if (e.key === 'Escape') closeViewModal();
+}
+
+viewEditBtn.addEventListener('click', async () => {
+  if (!currentViewedItem) return;
+  // fetch fresh data then open edit
+  try {
+    const dref = doc(db, 'pedidos', currentViewedItem.id);
+    const snap = await getDoc(dref);
+    if (snap.exists()) {
+      const data = { id: snap.id, ...snap.data() };
+      openEditModal(data);
+      closeViewModal();
+    } else {
+      alert('Pedido não encontrado.');
+    }
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+});
+
+viewPrintBtn.addEventListener('click', () => {
+  if (!currentViewedItem) return;
+  printTicket(currentViewedItem);
+});
+
+viewDeleteBtn.addEventListener('click', async () => {
+  if (!currentViewedItem) return;
+  if (!confirm('Deletar este pedido?')) return;
+  try {
+    await deleteDoc(doc(db, 'pedidos', currentViewedItem.id));
+    closeViewModal();
+  } catch (err) {
+    alert('Erro: ' + err.message);
   }
 });
 
@@ -446,6 +514,8 @@ function renderPedidos(items){
   emptyMsg.style.display = 'none';
   countInfo.textContent = `${items.length} pedido(s)`;
 
+  const isMobileCompact = window.innerWidth <= 880;
+
   items.forEach(item => {
     const li = document.createElement('li');
     li.className = 'pedido-item';
@@ -456,16 +526,44 @@ function renderPedidos(items){
     h4.textContent = item.nome + (item.numero ? ` • ${item.numero}` : '');
     main.appendChild(h4);
 
-    const meta = document.createElement('div');
-    meta.className = 'pedido-meta';
     const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : (item.horario instanceof Date ? item.horario : null);
     const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '-';
-    meta.innerHTML = `<div><strong>Tipo:</strong> ${item.tipo}</div>
-                      <div><strong>Horário:</strong> ${horarioStr}</div>
-                      <div><strong>Valor:</strong> R$ ${Number(item.valor).toFixed(2)}</div>
-                      <div><strong>Itens:</strong> ${item.itens}</div>
-                      ${item.endereco ? `<div><strong>Endereço:</strong> ${item.endereco}</div>` : ''}`;
-    main.appendChild(meta);
+
+    if (isMobileCompact) {
+      // compact view: only name + small subline
+      const compactSub = document.createElement('div');
+      compactSub.className = 'compact-sub';
+      compactSub.innerHTML = `${horarioStr} • R$ ${Number(item.valor).toFixed(2)}`;
+      main.appendChild(compactSub);
+
+      // clicking the whole item opens the view modal with details + actions
+      li.addEventListener('click', async () => {
+        // fetch up-to-date doc
+        try {
+          const dref = doc(db, 'pedidos', item.id);
+          const snap = await getDoc(dref);
+          if (snap.exists()) {
+            const data = { id: snap.id, ...snap.data() };
+            openViewModal(data);
+          } else {
+            alert('Pedido não encontrado (talvez já tenha sido removido).');
+          }
+        } catch (err) {
+          alert('Erro: ' + err.message);
+        }
+      });
+    } else {
+      // desktop: show full meta inline and actions visible
+      const meta = document.createElement('div');
+      meta.className = 'pedido-meta';
+      meta.innerHTML = `<div><strong>Tipo:</strong> ${item.tipo}</div>
+                        <div><strong>Horário:</strong> ${horarioStr}</div>
+                        <div><strong>Valor:</strong> R$ ${Number(item.valor).toFixed(2)}</div>
+                        <div><strong>Itens:</strong> ${escapeHtml(item.itens)}</div>
+                        ${item.endereco ? `<div><strong>Endereço:</strong> ${escapeHtml(item.endereco)}</div>` : '' }
+                        <div><strong>Pago:</strong> ${item.pago ? 'Sim' : 'Não'}</div>`;
+      main.appendChild(meta);
+    }
 
     const actions = document.createElement('div');
     actions.className = 'pedido-actions';
@@ -476,7 +574,8 @@ function renderPedidos(items){
     const btnEdit = document.createElement('button');
     btnEdit.className = 'btn ghost';
     btnEdit.textContent = 'Editar';
-    btnEdit.addEventListener('click', async () => {
+    btnEdit.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
       try {
         const dref = doc(db, 'pedidos', item.id);
         const snap = await getDoc(dref);
@@ -495,15 +594,17 @@ function renderPedidos(items){
     const btnPrint = document.createElement('button');
     btnPrint.className = 'btn ghost';
     btnPrint.textContent = 'Imprimir';
-    btnPrint.addEventListener('click', () => {
+    btnPrint.addEventListener('click', (ev) => {
+      ev.stopPropagation();
       printTicket(item);
     });
 
     // Delete button
     const btnDelete = document.createElement('button');
-    btnDelete.className = 'btn ghost';
+    btnDelete.className = 'btn ghost danger';
     btnDelete.textContent = 'Deletar';
-    btnDelete.addEventListener('click', async () => {
+    btnDelete.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
       if (editState.open && editIdEl.value === item.id) {
         const sure = confirm('Você está editando este pedido agora — deletar enquanto edita pode causar perda de dados. Deseja realmente deletar?');
         if (!sure) return;
@@ -522,9 +623,31 @@ function renderPedidos(items){
     actions.appendChild(actionsRow);
 
     li.appendChild(main);
-    li.appendChild(actions);
+    if (!isMobileCompact) li.appendChild(actions);
     pedidosList.appendChild(li);
   });
+}
+
+/* --- render view content (modal) --- */
+function renderViewContent(item) {
+  const horarioDate = item.horario && item.horario.toDate ? item.horario.toDate() : null;
+  const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '-';
+  const numero = item.numero ? escapeHtml(item.numero) : '-';
+  const endereco = item.endereco ? escapeHtml(item.endereco) : '-';
+  const itens = escapeHtml(item.itens).replace(/\n/g,'<br>');
+  const valorStr = `R$ ${Number(item.valor || 0).toFixed(2)}`;
+
+  // NOTE: we intentionally show 'Pago' status in the site/modal, but printTicket will NOT include it
+  viewContent.innerHTML = `
+    <div><strong>Nome:</strong> ${escapeHtml(item.nome)}</div>
+    <div class="meta-line"><strong>Cliente:</strong> ${numero}</div>
+    <div class="meta-line"><strong>Tipo:</strong> ${escapeHtml(item.tipo || '-')}</div>
+    ${item.endereco ? `<div class="meta-line"><strong>Endereço:</strong> ${endereco}</div>` : ''}
+    <div class="meta-line"><strong>Horário:</strong> ${escapeHtml(horarioStr)}</div>
+    <div style="margin-top:8px;"><strong>Itens:</strong><div style="margin-top:6px;">${itens}</div></div>
+    <div class="meta-line" style="margin-top:8px;"><strong>Total:</strong> ${escapeHtml(valorStr)}</div>
+    <div class="meta-line"><strong>Pago:</strong> ${item.pago ? 'Sim' : 'Não'}</div>
+  `;
 }
 
 /* --- Calendar render e interação --- */
@@ -582,7 +705,7 @@ clearFilterBtn.addEventListener('click', () => {
   selectedDateFilter = null;
   if (window.__refreshPedidos) window.__refreshPedidos();
   renderCalendar();
-  closeNav(); // Fecha o menu ao limpar filtro
+  closeNav();
 });
 
 /* --- Order controls --- */
@@ -593,13 +716,38 @@ document.querySelectorAll('input[name="order"]').forEach(r => {
   });
 });
 
+/* --- Delete day button: deleta pedidos do dia selecionado (ou do dia atual se não houver seleção) --- */
+deleteDayBtn.addEventListener('click', async () => {
+  let day = selectedDateFilter ? new Date(selectedDateFilter) : new Date();
+  day.setHours(0,0,0,0);
+  const end = new Date(day);
+  end.setDate(end.getDate()+1);
+
+  if (!confirm(`Deletar TODOS os pedidos do dia ${day.toLocaleDateString('pt-BR')}? Esta ação não pode ser desfeita.`)) return;
+
+  try {
+    const startTS = Timestamp.fromDate(day);
+    const endTS = Timestamp.fromDate(end);
+    const q = query(pedidosCol, where('horario', '>=', startTS), where('horario', '<', endTS));
+    const snaps = await getDocs(q);
+    const batchPromises = [];
+    snaps.forEach(s => {
+      batchPromises.push(deleteDoc(doc(db, 'pedidos', s.id)));
+    });
+    await Promise.all(batchPromises);
+    alert('Pedidos do dia removidos.');
+  } catch (err) {
+    alert('Erro ao deletar pedidos do dia: ' + err.message);
+  }
+});
+
 /* init calendar on load */
 renderCalendar();
 
-console.log('%cR2D2: gerenciador carregado — boa sorte!', 'color: #e53935; font-weight:700');
+console.log('%cR2D2: gerenciador carregado — boa sorte!', 'color: #1e88e5; font-weight:700');
 
 /* ============================
-   Print ticket function
+   Print ticket function (NÃO mostra "pago")
    ============================ */
 
 function escapeHtml(text) {
@@ -613,6 +761,7 @@ function escapeHtml(text) {
 }
 
 function printTicket(item) {
+  // NOTE: intentionally do not print the 'pago' status
   const horarioDate = item.horario?.toDate ? item.horario.toDate() : null;
   const horarioStr = horarioDate ? horarioDate.toLocaleString('pt-BR') : '-';
   const numero = item.numero ? escapeHtml(item.numero) : '-';
