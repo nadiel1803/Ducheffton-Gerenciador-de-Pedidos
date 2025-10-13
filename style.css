@@ -14,30 +14,45 @@
 html,body{height:100%;margin:0;background:var(--bg);color:#111;overflow-x:hidden;}
 .hidden{display:none}
 
+/* --- Layout Principal de Páginas --- */
+#app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.page {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+/* Animação de entrada/saída */
+#listPage { z-index: 10; transform: translateX(0); }
+#detailsPage { z-index: 20; transform: translateX(100%); }
+
+body.details-view #listPage { transform: translateX(-30%); opacity: 0.8; }
+body.details-view #detailsPage { transform: translateX(0); }
+
+
+/* --- Barra Superior (Topbar) --- */
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:18px 20px;border-bottom:1px solid #eee;
-  background:#fff;
-  position:sticky;top:0;z-index:100;
+  padding:12px var(--gap);
+  border-bottom:1px solid #eee;
+  background:rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  position:sticky; top:0; z-index:100;
+  flex-shrink: 0;
 }
-.brand{text-align:left;}
-.brand h1{margin:0;font-size:1.2rem;color:var(--accent1)}
+.brand h1{margin:0;font-size:1.3rem;color:var(--accent1)}
 .brand .sub{display:block;font-size:0.8rem;color:var(--muted)}
+.header-actions{display:flex;gap:8px;align-items:center}
+.page-title { font-size: 1.1rem; margin: 0; position: absolute; left: 50%; transform: translateX(-50%); }
 
-.user-area{display:flex;gap:8px;align-items:center}
-.user-email{font-size:0.9rem;color:var(--muted)}
 
-.main{
-  display:flex;
-  gap:var(--gap);
-  padding:18px;
-}
+/* --- Conteúdo Principal --- */
+.main-content { padding: var(--gap); overflow-y: auto; flex-grow: 1; }
+.list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 4px;}
 
-/* layout: form area and list area */
-.form-area{flex:0 0 360px;max-width:420px;transition: transform 0.3s ease-in-out;}
-.list-area{flex:1;min-width:280px}
 
-/* cards */
+/* --- Cards --- */
 .card{
   background:var(--card-bg);
   border-radius:var(--radius);
@@ -45,205 +60,103 @@ html,body{height:100%;margin:0;background:var(--bg);color:#111;overflow-x:hidden
   box-shadow:0 6px 18px rgba(0,0,0,0.04);
   margin-bottom:var(--gap);
   border:1px solid rgba(0,0,0,0.03);
-  transition: transform 0.15s, box-shadow 0.15s;
 }
-.card:hover { transform: translateY(-4px); box-shadow:0 18px 35px rgba(0,0,0,0.07); }
-.card h2{margin:0 0 8px 0}
-.card h3{margin:0 0 8px 0;font-size:1rem;color:var(--muted)}
 
-label{display:block;margin-bottom:8px;font-size:0.9rem}
+/* --- Formulários --- */
+label{display:block;margin-bottom:12px;font-size:0.9rem;font-weight:500;}
 input,textarea,select{
-  width:100%;padding:8px 10px;margin-top:6px;border-radius:8px;border:1px solid #ddd;
-  font-size:0.95rem;background:transparent;
+  width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ddd;
+  font-size:1rem;background:transparent;
   transition: box-shadow 0.12s, border-color 0.12s;
 }
-input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accent1); box-shadow:0 6px 20px rgba(255,138,0,0.08); }
-textarea{resize:vertical}
+input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accent1); box-shadow:0 6px 20px rgba(255,138,0,0.12); }
+textarea{resize:vertical; min-height: 80px;}
 
-.form-actions{display:flex;gap:8px;margin-top:10px}
+
+/* --- Botões (Btn) --- */
 .btn{
-  padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700;
+  padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;
   transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
-  display:inline-flex;align-items:center;gap:8px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size: 0.9rem;
 }
-.btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-.btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06)}
+.btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+.btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);color:#333;}
 .btn.ghost:hover{background-color:rgba(0,0,0,0.04);}
-.btn:hover{ transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
-.btn:active{ transform: translateY(-1px); }
-.btn.google{background:#fff;border:1px solid #ccc;padding:10px 14px}
+.btn:hover{ transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
+.btn:active{ transform: translateY(0px); opacity: 0.9; }
+.btn.danger{ border-color: #ffdde0; color: #c82121; background: #fff8f8; }
+.btn.danger:hover{ box-shadow: 0 8px 20px rgba(255,82,82,0.12); border-color: #ff5252; }
+.details-actions { margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
 
-/* Add button specific */
-.add-btn{ display:inline-flex; } /* aparece por padrão, mas escondemos no desktop via media query abaixo */
 
-/* danger */
-.btn.danger{ border-color: #ff5252; color: #b71c1c; }
-.btn.danger:hover{ box-shadow: 0 8px 20px rgba(255,82,82,0.12); }
-
-/* list */
+/* --- Lista de Pedidos --- */
 .pedidos-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
 .pedido-item{
-  display:flex;justify-content:space-between;align-items:flex-start;padding:10px;border-radius:10px;
-  border-left:6px solid var(--accent1);background:var(--glass);
+  display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;
+  border-left:5px solid var(--accent1);background:var(--card-bg);
+  box-shadow:0 6px 18px rgba(0,0,0,0.04);
   transition: transform 0.12s, box-shadow 0.12s;
-  cursor:default;
+  cursor:pointer;
 }
-.pedido-item:hover{ transform: translateY(-4px); box-shadow:0 12px 28px rgba(0,0,0,0.06); }
-.pedido-main{max-width:72%}
-.pedido-main h4{margin:0;font-size:1rem}
-.pedido-meta{font-size:0.85rem;color:var(--muted);margin-top:6px;word-wrap:break-word;}
-.pedido-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.pedido-item:hover{ transform: translateY(-4px); box-shadow:0 12px 28px rgba(0,0,0,0.07); }
+.pedido-main{flex-grow:1;}
+.pedido-main h4{margin:0;font-size:1.05rem;font-weight:600;}
+.pedido-main .compact-sub { font-size:0.85rem; color:var(--muted); margin-top:6px; }
+.pedido-item::after { content: '›'; font-size: 1.5rem; color: #ccc; }
 
-/* New action styles (row) */
-.pedido-actions .actions-row{display:flex;gap:8px;flex-direction:row;align-items:center}
 
-/* small/copy */
+/* --- Helpers --- */
+.row{display:flex;gap:12px;align-items:center;}
 .small{font-size:0.85rem}
 .muted{color:var(--muted)}
+.empty-msg{text-align:center;padding:24px;color:var(--muted);display:none}
+.paid-label { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:700; color:var(--muted); }
 
-.empty-msg{text-align:center;padding:18px;color:var(--muted);display:none}
 
-/* calendar */
-.small-calendar #calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.day{
-  padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid transparent;
-  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
-}
-.day:hover{transform:translateY(-3px); box-shadow:0 8px 18px rgba(0,0,0,0.06)}
-.day.today{box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.06)}
-.day.selected{background:linear-gradient(180deg,var(--accent2),var(--accent1));color:white}
-
-.list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.row{display:flex;gap:12px;align-items:center}
-.calendar-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
-
-/* Mobile menu toggle */
-.menu-toggle{display:none;font-size:1.5rem;padding:0 12px;}
-.overlay{
-  display:none; position:fixed; top:0;left:0;
-  width:100%;height:100%; background:rgba(0,0,0,0.4); z-index:199;
-}
-
-/* view modal tweaks */
-.view-body #viewContent { font-size:0.95rem; color:#111; line-height:1.45; }
-.view-body .meta-line { margin:6px 0; color:var(--muted); }
-
-/* responsive - mobile: form above list */
-@media (max-width: 880px){
-  body.nav-open .form-area{transform: translateX(0);}
-  body.nav-open .overlay{display:block;}
-
-  .main{flex-direction:column;padding:12px}
-  .form-area{
-    position:fixed; top:0; left:0;
-    height:100%; width:85%; max-width:360px;
-    z-index:200; background:var(--bg);
-    padding:18px; margin-bottom:0;
-    overflow-y:auto;
-    transform: translateX(-105%);
-    border-right:1px solid #eee;
-  }
-  .list-area{width:100%}
-  .topbar{padding:12px}
-  .user-email{display:none;} /* Oculta email no mobile pra economizar espaço */
-  .menu-toggle{display:none;} /* escondemos o menu-toggle */
-
-  .brand{flex:1;text-align:left;}
-  .header-actions{display:flex;gap:8px;align-items:center;}
-
-  /* compact list on small screens: only show minimal info */
-  .pedido-meta{display:none}
-  .pedido-main h4{font-size:1.05rem}
-  .pedido-main .compact-sub { font-size:0.85rem; color:var(--muted); margin-top:6px; }
-  .pedido-actions{display:none} /* actions will be in modal */
-
-  /* garantir que o botão de adicionar apareça no mobile */
-  .add-btn{ display:inline-flex !important; }
-}
-
-/* esconder o botão de adicionar no desktop (computador) */
-@media (min-width: 881px){
-  .add-btn{ display:none !important; }
-}
-
-/* ============================
-   Styles para a tela de login
-   ============================ */
+/* --- Tela de Login --- */
 .login-screen{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45));
   z-index:9999;padding:20px;
 }
 .login-card{
-  width:100%;max-width:420px;background:var(--card-bg);padding:20px;border-radius:14px;
+  width:100%;max-width:420px;background:var(--card-bg);padding:24px;border-radius:14px;
   box-shadow:0 12px 40px rgba(0,0,0,0.25);text-align:center;border:1px solid rgba(0,0,0,0.06);
 }
 .login-card h2{margin:0 0 6px 0}
 .login-card p{margin:0 0 12px 0;color:var(--muted)}
-
-.pin-input-row{display:flex;justify-content:center;margin-top:8px}
 #pinInput{
   width:220px;text-align:center;font-size:1.2rem;padding:10px;border-radius:10px;border:1px solid #ddd;
   letter-spacing:6px;
 }
 
-@media (max-width:480px){
-  #pinInput{width:160px}
-}
 
-/* ============================
-   Modal Edit styles
-   ============================ */
-.modal{
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  z-index:1200;
-}
+/* --- Modal de Filtro --- */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1200;}
 .modal.hidden{display:none}
-.modal-backdrop{
-  position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;
-  /* clicking backdrop will be ignored in JS */
-}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;}
 .modal-dialog{
-  position:relative;z-index:1202;max-width:520px;width:94%;background:var(--card-bg);
-  border-radius:12px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,0.35);border:1px solid rgba(0,0,0,0.06);
+  position:relative;z-index:1202;max-width:520px;width:94%;background:var(--bg);
+  border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.35);border:1px solid rgba(0,0,0,0.06);
 }
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.modal-body{display:flex;flex-direction:column;gap:8px}
-.modal-actions{margin-top:10px;justify-content:flex-end}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom: 1px solid #eee;}
+.modal-body{padding:0; max-height: 80vh; overflow-y: auto;}
+.modal-body .card { border: none; box-shadow: none; border-radius: 0; border-bottom: 1px solid #eee; margin-bottom: 0; }
+.modal-body .card:last-child { border-bottom: none; }
 
-/* make modal form inputs slightly larger */
-.modal-body input, .modal-body textarea, .modal-body select {font-size:1rem;padding:10px}
 
-/* ============================
-   Print / Ticket styles (applied in the print window)
-   ============================ */
-/* These are mostly injected into the print window via JS.
-   Put defaults here for dev/test printing from main window too. */
-.ticket {
-  width: 80mm;
-  font-family: "Courier New", Courier, monospace;
-  color: #111;
-  padding: 8px 8px 14px 8px;
-  box-sizing: border-box;
+/* --- Calendário --- */
+.small-calendar #calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid transparent;transition: transform 0.12s, box-shadow 0.12s, background 0.12s;}
+.day:hover{transform:translateY(-3px); box-shadow:0 8px 18px rgba(0,0,0,0.06)}
+.day.today{border:1px solid var(--accent1); color: var(--accent1);}
+.day.selected{background:linear-gradient(180deg,var(--accent2),var(--accent1));color:white;font-weight:700;}
+.calendar-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+
+/* Media Queries */
+@media (max-width:480px){
+  #pinInput{width:180px}
+  .page-title { font-size: 1rem; }
+  .brand h1 { font-size: 1.1rem; }
 }
-.ticket header { text-align:center; margin-bottom:6px; }
-.ticket .brand-title { font-size: 14px; font-weight:700; letter-spacing:1px; }
-.ticket .meta { font-size:11px; color:var(--muted); margin-bottom:8px; }
-.ticket .items { font-size:12px; margin-bottom:8px; }
-.ticket .items .line { display:flex; justify-content:space-between; margin:6px 0; }
-.ticket .total { display:flex; justify-content:space-between; font-weight:700; font-size:13px; border-top:1px dashed #ccc; padding-top:8px; margin-top:6px; }
-.ticket .footer { margin-top:10px; font-size:10px; text-align:center; color:var(--muted); }
-.ticket .quote { margin-top:10px; font-style:italic; font-size:11px; text-align:center; }
-
-/* Print page size for 80mm ticket */
-@media print {
-  @page { size: 80mm auto; margin: 3mm; }
-  body * { visibility: visible; }
-  body { background: white; }
-}
-
-/* small tweaks */
-.muted { color: #6b6b6b; }
-
-/* paid-label styling */
-.paid-label { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:700; color:var(--muted); }

@@ -8,70 +8,90 @@
 </head>
 <body>
   <div id="app" class="hidden">
-    <header class="topbar">
-      <!-- NOTE: menuToggle foi "desativado" no mobile — agora usamos addPedidoBtn -->
-      <button id="menuToggle" class="btn ghost menu-toggle" aria-hidden="true">☰</button>
 
-      <div class="brand">
-        <h1>Gerenciador de Pedidos</h1>
-      </div>
-
-      <div class="header-actions">
-        <button id="addPedidoBtn" class="btn primary add-btn">➕ Adicionar pedido</button>
-        <div class="user-area">
-          <span id="userLabel" class="user-email">Conectado</span>
-          <button id="signOutBtn" class="btn ghost">Sair</button>
+    <div id="listPage" class="page active">
+      <header class="topbar">
+        <div class="brand">
+          <h1>DuCheffton</h1>
+          <span class="sub">Gerenciador de Pedidos</span>
         </div>
-      </div>
-    </header>
+        <div class="header-actions">
+          <button id="filterBtn" class="btn ghost">Filtros</button>
+          <button id="addPedidoBtn" class="btn primary">➕ Novo</button>
+        </div>
+      </header>
 
-    <main class="main">
-      <div id="overlay" class="overlay"></div>
+      <main class="main-content">
+        <div class="list-header">
+          <h2>Pedidos</h2>
+          <div id="countInfo" class="muted">—</div>
+        </div>
+        <ul id="pedidosList" class="pedidos-list"></ul>
+        <div id="emptyMsg" class="empty-msg">Nenhum pedido encontrado.</div>
+      </main>
+    </div>
 
-      <aside id="formArea" class="form-area" aria-hidden="true">
-        <div class="card">
-          <h2>Adicionar Pedido</h2>
-          <form id="pedidoForm">
+    <div id="detailsPage" class="page">
+      <header class="topbar">
+        <button id="backBtn" class="btn ghost">‹ Voltar</button>
+        <h2 id="detailsTitle" class="page-title">Novo Pedido</h2>
+        <button id="saveBtn" type="submit" form="pedidoForm" class="btn primary">Salvar</button>
+      </header>
+
+      <main class="main-content">
+        <form id="pedidoForm">
+          <input type="hidden" id="pedidoId" />
+          <div class="card">
             <label>Nome
               <input id="nome" required maxlength="80" />
             </label>
-
             <label>Número do cliente
-              <input id="numero" inputmode="numeric" placeholder="opcional" />
+              <input id="numero" inputmode="numeric" placeholder="Opcional" />
             </label>
-
             <label>Entrega ou Retirada?
               <select id="tipoEntrega">
                 <option value="entrega">Entrega</option>
                 <option value="retirada">Retirada</option>
               </select>
             </label>
-
             <label id="enderecoLabel">Endereço
               <input id="endereco" />
             </label>
+          </div>
 
+          <div class="card">
             <label>Itens do pedido
-              <textarea id="itens" rows="3" required placeholder="Ex: 2x pizza, 1x refrigerante"></textarea>
+              <textarea id="itens" rows="4" required placeholder="Ex: 2x pizza, 1x refrigerante"></textarea>
             </label>
-
-            <label>Horário
-              <input id="horario" type="datetime-local" required />
-            </label>
-
-            <label>Valor total (R$)
-              <input id="valor" type="number" step="0.01" min="0" required />
-            </label>
-
-            <label class="paid-label"><input id="pago" type="checkbox" /> Pedido pago</label>
-
-            <div class="form-actions">
-              <button type="submit" class="btn primary">Salvar pedido</button>
-              <button type="button" id="clearForm" class="btn ghost">Limpar</button>
+            <div class="row">
+              <label style="flex:1">Horário
+                <input id="horario" type="datetime-local" required />
+              </label>
+              <label style="flex:0 0 120px">Valor (R$)
+                <input id="valor" type="number" step="0.01" min="0" required />
+              </label>
             </div>
-          </form>
-        </div>
+            <label class="paid-label"><input id="pago" type="checkbox" /> Pedido pago</label>
+          </div>
+        </form>
 
+        <div class="details-actions">
+          <button id="printBtn" class="btn ghost">Imprimir Pedido</button>
+          <button id="deleteBtn" class="btn ghost danger">Deletar Pedido</button>
+        </div>
+      </main>
+    </div>
+
+  </div>
+
+  <div id="filterModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="filterModalTitle">
+      <header class="modal-header">
+        <h3 id="filterModalTitle">Filtros e Ordenação</h3>
+        <button id="filterCloseBtn" class="btn ghost" title="Fechar">✕</button>
+      </header>
+      <div class="modal-body">
         <div class="card small-calendar">
           <h3>Filtro por data</h3>
           <div id="calendar"></div>
@@ -95,122 +115,33 @@
               <input type="radio" name="order" value="desc" /> Decrescente
             </label>
           </div>
-
           <div style="margin-top:10px;">
             <button id="deleteDayBtn" class="btn ghost danger">Deletar pedidos deste dia</button>
           </div>
         </div>
-      </aside>
-
-      <section class="list-area">
-        <div class="card">
-          <div class="list-header">
-            <h2>Pedidos</h2>
-            <div id="countInfo" class="muted">—</div>
-          </div>
-          <ul id="pedidosList" class="pedidos-list"></ul>
-          <div id="emptyMsg" class="empty-msg">Nenhum pedido encontrado.</div>
-        </div>
-      </section>
-    </main>
+      </div>
+    </div>
   </div>
 
-  <!-- Login screen via PIN -->
+
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <h2>Entrar com PIN</h2>
-      <p>Insira seu PIN de 4 dígitos para acessar o gerenciador.</p>
-
+      <p>Insira seu PIN para acessar o gerenciador.</p>
       <div class="pin-input-row">
         <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" />
       </div>
-
       <div style="margin-top:10px;">
         <label style="display:flex;align-items:center;gap:8px;justify-content:center;">
           <input type="checkbox" id="rememberCheck" />
-          <span class="small muted">Manter conectado (no navegador)</span>
+          <span class="small muted">Manter conectado</span>
         </label>
       </div>
-
       <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
         <button id="pinSubmit" class="btn primary">Entrar</button>
         <button id="pinHelp" class="btn ghost">Ajuda</button>
       </div>
-
       <div id="loginMsg" class="muted small" style="margin-top:12px;"></div>
-    </div>
-  </div>
-
-  <!-- VIEW MODAL (detalhes do pedido) -->
-  <div id="viewModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-backdrop"></div>
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
-      <header class="modal-header">
-        <h3 id="viewModalTitle">Detalhes do Pedido</h3>
-        <button id="viewCloseBtn" class="btn ghost" title="Fechar">✕</button>
-      </header>
-
-      <div class="modal-body view-body">
-        <div id="viewContent"></div>
-        <div class="modal-actions" style="margin-top:12px;">
-          <button id="viewEditBtn" class="btn ghost">Editar</button>
-          <button id="viewPrintBtn" class="btn ghost">Imprimir</button>
-          <button id="viewDeleteBtn" class="btn ghost danger">Deletar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- EDIT MODAL (seguro) -->
-  <div id="editModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-backdrop"></div>
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
-      <header class="modal-header">
-        <h3 id="editModalTitle">Editar Pedido</h3>
-        <button id="editCloseBtn" class="btn ghost" title="Fechar">✕</button>
-      </header>
-
-      <form id="editForm" class="modal-body">
-        <input type="hidden" id="editId" />
-
-        <label>Nome
-          <input id="editNome" required maxlength="80" />
-        </label>
-
-        <label>Número do cliente
-          <input id="editNumero" inputmode="numeric" placeholder="opcional" />
-        </label>
-
-        <label>Entrega ou Retirada?
-          <select id="editTipoEntrega">
-            <option value="entrega">Entrega</option>
-            <option value="retirada">Retirada</option>
-          </select>
-        </label>
-
-        <label id="editEnderecoLabel">Endereço
-          <input id="editEndereco" />
-        </label>
-
-        <label>Itens do pedido
-          <textarea id="editItens" rows="3" required placeholder="Ex: 2x pizza, 1x refrigerante"></textarea>
-        </label>
-
-        <label>Horário
-          <input id="editHorario" type="datetime-local" required />
-        </label>
-
-        <label>Valor total (R$)
-          <input id="editValor" type="number" step="0.01" min="0" required />
-        </label>
-
-        <label class="paid-label"><input id="editPago" type="checkbox" /> Pedido pago</label>
-
-        <div class="form-actions modal-actions">
-          <button type="submit" class="btn primary">Salvar alterações</button>
-          <button type="button" id="cancelEdit" class="btn ghost">Cancelar</button>
-        </div>
-      </form>
     </div>
   </div>
 
