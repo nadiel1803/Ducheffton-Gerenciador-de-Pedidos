@@ -30,14 +30,16 @@ body.details-view #detailsPage { transform: translateX(0); }
 .list-page-container {
   display: flex;
   flex-grow: 1;
-  overflow: hidden;
+  /* Garante que o container ocupe o espaço restante e não ultrapasse a tela */
+  height: calc(100% - 65px); /* Altura da tela menos a altura do topbar */
 }
+
 .sidebar {
   display: none; /* Escondido por padrão (mobile) */
   flex-shrink: 0;
   width: 320px;
   padding: var(--gap);
-  overflow-y: auto;
+  overflow-y: auto; /* Permite scroll apenas na sidebar */
   background: #f0f0f0;
   border-right: 1px solid #e5e5e5;
 }
@@ -47,7 +49,7 @@ body.details-view #detailsPage { transform: translateX(0); }
 
 .main-content {
   padding: var(--gap);
-  overflow-y: auto;
+  overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
   flex-grow: 1;
 }
 
@@ -61,6 +63,7 @@ body.details-view #detailsPage { transform: translateX(0); }
   -webkit-backdrop-filter: blur(8px);
   position:sticky; top:0; z-index:100;
   flex-shrink: 0;
+  height: 65px; /* Altura fixa para o cálculo de height do container */
 }
 .brand h1{margin:0;font-size:1.3rem;color:var(--accent1)}
 .brand .sub{display:block;font-size:0.8rem;color:var(--muted)}
