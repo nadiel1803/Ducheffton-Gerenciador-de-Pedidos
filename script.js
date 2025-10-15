@@ -1,4 +1,4 @@
-// script.js — versão com sidebar de filtros para desktop
+// script.js — versão com todas as funcionalidades implementadas
 import { db } from './firebase.js';
 import {
   collection, addDoc, onSnapshot, query, orderBy, where, doc, deleteDoc, Timestamp, updateDoc, getDocs
@@ -40,6 +40,23 @@ const sidebar = document.getElementById('sidebar');
 const filterControls = document.getElementById('filterControls');
 const filterModalBody = filterModal.querySelector('.modal-body');
 
+// --- Elementos de Pedidos Concluídos ---
+const completedBtn = document.getElementById('completedBtn');
+const completedModal = document.getElementById('completedModal');
+const completedCloseBtn = document.getElementById('completedCloseBtn');
+const completedList = document.getElementById('completedList');
+
+// --- Elementos do Menu Mobile ---
+const hamburgerMenu = document.getElementById('hamburgerMenu');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const mobileAddPedidoBtn = document.getElementById('mobileAddPedidoBtn');
+const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+const mobileCompletedBtn = document.getElementById('mobileCompletedBtn');
+
+// --- Elementos de Login ---
+const pinInput = document.getElementById('pinInput');
+const numpad = document.getElementById('numpad');
+
 // --- Variáveis de Estado ---
 let selectedDateFilter = null;
 let orderDirection = 'asc';
@@ -47,6 +64,7 @@ let unsubscribe = null;
 let calendarDate = new Date();
 calendarDate.setDate(1);
 let currentPedido = null;
+window.pedidosData = []; // Cache global dos pedidos da lista
 
 const pedidosCol = collection(db, 'pedidos');
 
@@ -76,6 +94,7 @@ function showDetailsPage(pedido = null) {
   } else {
     detailsTitle.textContent = 'Novo Pedido';
     pedidoForm.reset();
+    pedidoIdEl.value = ''; // FIX: Garante que o ID é limpo ao criar novo pedido
     deleteBtn.classList.add('hidden');
     printBtn.classList.add('hidden');
   }
@@ -84,24 +103,43 @@ function showDetailsPage(pedido = null) {
 }
 addPedidoBtn.addEventListener('click', () => showDetailsPage(null));
 backBtn.addEventListener('click', showListPage);
+
+// Event listener para abrir detalhes e marcar como concluído
 pedidosList.addEventListener('click', (e) => {
-  const li = e.target.closest('.pedido-item');
-  if (li && li.dataset.id) {
-    const pedido = window.pedidosData.find(p => p.id === li.dataset.id);
-    if (pedido) showDetailsPage(pedido);
+  const target = e.target;
+  const card = target.closest('.pedido-card');
+  if (!card) return;
+
+  const pedidoId = card.dataset.id;
+  const pedido = window.pedidosData.find(p => p.id === pedidoId);
+  if (!pedido) return;
+
+  if (target.matches('.complete-btn')) {
+    if (confirm(`Marcar o pedido de "${pedido.nome}" como concluído?`)) {
+      marcarComoConcluido(pedidoId);
+    }
+  } else if (target.closest('.pedido-card-header, .pedido-card-body')) {
+    showDetailsPage(pedido);
   }
 });
+
+async function marcarComoConcluido(id) {
+    try {
+        await updateDoc(doc(db, 'pedidos', id), { status: 'completed' });
+    } catch (err) {
+        alert('Erro ao concluir pedido: ' + err.message);
+    }
+}
+
 
 /* --- Lógica de UI Responsiva para Filtros --- */
 function setupFilterUI() {
   const isDesktop = window.matchMedia('(min-width: 992px)').matches;
   if (isDesktop) {
-    // No desktop, move os controles para a sidebar e garante que estejam visíveis
     sidebar.appendChild(filterControls);
     filterControls.classList.remove('hidden');
-    filterModal.classList.add('hidden'); // Garante que modal esteja fechado
+    filterModal.classList.add('hidden');
   } else {
-    // No mobile, move os controles para fora do DOM visível, prontos para o modal
     document.body.appendChild(filterControls);
     filterControls.classList.add('hidden');
   }
@@ -109,28 +147,51 @@ function setupFilterUI() {
 window.addEventListener('resize', setupFilterUI);
 window.addEventListener('DOMContentLoaded', setupFilterUI);
 
-/* --- Lógica do Modal de Filtro (Mobile) --- */
-function openFilterModal() {
-  filterModalBody.appendChild(filterControls);
-  filterControls.classList.remove('hidden');
-  filterModal.classList.remove('hidden');
-}
-function closeFilterModal() {
-  document.body.appendChild(filterControls);
-  filterControls.classList.add('hidden');
-  filterModal.classList.add('hidden');
-}
-filterBtn.addEventListener('click', openFilterModal);
-filterCloseBtn.addEventListener('click', closeFilterModal);
-filterModal.querySelector('.modal-backdrop').addEventListener('click', closeFilterModal);
+/* --- Lógica dos Modais (Filtro e Concluídos) --- */
+function openModal(modalEl) { modalEl.classList.remove('hidden'); }
+function closeModal(modalEl) { modalEl.classList.add('hidden'); }
 
-/* --- Autenticação --- */
-const pinInput = document.getElementById('pinInput');
+// Filtro
+filterBtn.addEventListener('click', () => { filterModalBody.appendChild(filterControls); filterControls.classList.remove('hidden'); openModal(filterModal); });
+filterCloseBtn.addEventListener('click', () => closeModal(filterModal));
+filterModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(filterModal));
+
+// Concluídos
+completedBtn.addEventListener('click', () => { renderCompletedPedidos(); openModal(completedModal); });
+completedCloseBtn.addEventListener('click', () => closeModal(completedModal));
+completedModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(completedModal));
+
+/* --- Lógica do Menu Mobile --- */
+hamburgerBtn.addEventListener('click', () => hamburgerMenu.classList.toggle('is-open'));
+function closeMobileMenu() { hamburgerMenu.classList.remove('is-open'); }
+mobileAddPedidoBtn.addEventListener('click', () => { closeMobileMenu(); showDetailsPage(null); });
+mobileFilterBtn.addEventListener('click', () => { closeMobileMenu(); filterBtn.click(); });
+mobileCompletedBtn.addEventListener('click', () => { closeMobileMenu(); completedBtn.click(); });
+
+
+/* --- Autenticação com Teclado Numérico --- */
 if (!sessionStorage.getItem('loggedIn') && !localStorage.getItem('loggedIn')) {
   showLogin();
 } else {
   showApp();
 }
+
+numpad.addEventListener('click', (e) => {
+    const key = e.target.closest('.numpad-key');
+    if (!key) return;
+
+    const action = key.dataset.action;
+    const currentVal = pinInput.value;
+
+    if (action === 'backspace') {
+        pinInput.value = currentVal.slice(0, -1);
+    } else if (action === 'clear') {
+        pinInput.value = '';
+    } else if (currentVal.length < pinInput.maxLength) {
+        pinInput.value += key.textContent;
+    }
+});
+
 document.getElementById('pinSubmit').addEventListener('click', () => {
   if (pinInput.value.trim() === APP_PIN) {
     const remember = document.getElementById('rememberCheck').checked;
@@ -138,8 +199,10 @@ document.getElementById('pinSubmit').addEventListener('click', () => {
     showApp();
   } else {
     document.getElementById('loginMsg').textContent = 'PIN incorreto.';
+    pinInput.value = '';
   }
 });
+
 function showLogin() { loginScreen.classList.remove('hidden'); appEl.classList.add('hidden'); }
 function showApp() { loginScreen.classList.add('hidden'); appEl.classList.remove('hidden'); initRealtimeListener(); }
 
@@ -149,6 +212,7 @@ tipoEntregaEl.addEventListener('change', () => {
   enderecoLabel.style.display = isEntrega ? 'block' : 'none';
   enderecoEl.required = isEntrega;
 });
+
 pedidoForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = pedidoIdEl.value;
@@ -162,17 +226,23 @@ pedidoForm.addEventListener('submit', async (e) => {
 
   saveBtn.disabled = true; saveBtn.textContent = 'Salvando...';
   try {
-    if (id) await updateDoc(doc(db, 'pedidos', id), data);
-    else { data.criadoEm = Timestamp.now(); await addDoc(pedidosCol, data); }
+    if (id) {
+      await updateDoc(doc(db, 'pedidos', id), data);
+    } else {
+      data.criadoEm = Timestamp.now();
+      data.status = 'active'; // Novo campo de status
+      await addDoc(pedidosCol, data);
+    }
     showListPage();
   } catch (err) { alert('Erro: ' + err.message); }
   finally { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
 });
 
+
 /* --- Ações (Imprimir, Deletar) --- */
 printBtn.addEventListener('click', () => currentPedido && printTicket(currentPedido));
 deleteBtn.addEventListener('click', async () => {
-  if (!currentPedido || !confirm('Deletar este pedido?')) return;
+  if (!currentPedido || !confirm('Deletar este pedido? A ação não pode ser desfeita.')) return;
   try { await deleteDoc(doc(db, 'pedidos', currentPedido.id)); showListPage(); }
   catch (err) { alert('Erro ao deletar: ' + err.message); }
 });
@@ -180,33 +250,97 @@ deleteBtn.addEventListener('click', async () => {
 /* --- Listener do Firebase e Renderização --- */
 function initRealtimeListener() {
   if (unsubscribe) unsubscribe();
-  let q = query(pedidosCol, orderBy('horario', orderDirection));
+  
+  let constraints = [where('status', '==', 'active'), orderBy('horario', orderDirection)];
+  
   if (selectedDateFilter) {
     const start = new Date(selectedDateFilter); start.setHours(0, 0, 0, 0);
     const end = new Date(start); end.setDate(end.getDate() + 1);
-    q = query(pedidosCol, where('horario', '>=', Timestamp.fromDate(start)), where('horario', '<', Timestamp.fromDate(end)), orderBy('horario', orderDirection));
+    constraints = [
+      where('status', '==', 'active'),
+      where('horario', '>=', Timestamp.fromDate(start)),
+      where('horario', '<', Timestamp.fromDate(end)),
+      orderBy('horario', orderDirection)
+    ];
   }
+  
+  const q = query(pedidosCol, ...constraints);
+  
   unsubscribe = onSnapshot(q, snapshot => {
     window.pedidosData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderPedidos(window.pedidosData);
   });
 }
 
+
 function renderPedidos(items) {
   pedidosList.innerHTML = '';
   emptyMsg.style.display = items.length ? 'none' : 'block';
   countInfo.textContent = `${items.length} pedido(s)`;
   items.forEach(item => {
-    const horarioStr = item.horario?.toDate().toLocaleString('pt-BR', { timeStyle: 'short' }) || '-';
+    const horarioDate = item.horario?.toDate();
+    const dataStr = horarioDate?.toLocaleDateString('pt-BR') || '-';
+    const horarioStr = horarioDate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) || '-';
+
     pedidosList.insertAdjacentHTML('beforeend', `
-      <li class="pedido-item" data-id="${item.id}">
-        <div class="pedido-main">
-          <h4>${escapeHtml(item.nome)}</h4>
-          <div class="compact-sub">${horarioStr} • R$ ${Number(item.valor || 0).toFixed(2)}</div>
+      <div class="pedido-card" data-id="${item.id}">
+        <div class="pedido-card-header">${escapeHtml(item.nome)}</div>
+        <div class="pedido-card-body">
+          ${item.numero ? `<div><strong>Nº Cliente:</strong> ${escapeHtml(item.numero)}</div>` : ''}
+          <div><strong>Data:</strong> ${dataStr}</div>
+          <div><strong>Horário:</strong> ${horarioStr}</div>
+          <div><strong>Valor:</strong> R$ ${Number(item.valor || 0).toFixed(2)}</div>
         </div>
-      </li>`);
+        <div class="pedido-card-footer">
+            <button class="btn success complete-btn">✔ Concluir Pedido</button>
+        </div>
+      </div>`);
   });
 }
+
+async function renderCompletedPedidos() {
+    completedList.innerHTML = '<p>Carregando...</p>';
+    const q = query(pedidosCol, where('status', '==', 'completed'), orderBy('horario', 'desc'));
+    const snapshot = await getDocs(q);
+    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (items.length === 0) {
+        completedList.innerHTML = '<p class="muted" style="text-align:center;">Nenhum pedido concluído encontrado.</p>';
+        return;
+    }
+
+    // Agrupar por data
+    const groupedByDate = items.reduce((acc, item) => {
+        const dateStr = item.horario.toDate().toLocaleDateString('pt-BR');
+        if (!acc[dateStr]) acc[dateStr] = [];
+        acc[dateStr].push(item);
+        return acc;
+    }, {});
+
+    // Ordenar os pedidos dentro de cada dia por horário crescente
+    for (const date in groupedByDate) {
+        groupedByDate[date].sort((a, b) => a.horario.toMillis() - b.horario.toMillis());
+    }
+
+    let html = '';
+    // As chaves já estão em ordem decrescente por causa da query inicial do Firebase
+    for (const dateStr of Object.keys(groupedByDate)) {
+        html += `<div class="date-group">`;
+        html += `<h4 class="date-header">${dateStr}</h4>`;
+        groupedByDate[dateStr].forEach(item => {
+            const horarioStr = item.horario.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            html += `
+                <div class="completed-item">
+                    <span><strong>${horarioStr}</strong> - ${escapeHtml(item.nome)}</span>
+                    <span>R$ ${Number(item.valor || 0).toFixed(2)}</span>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    completedList.innerHTML = html;
+}
+
 
 /* --- Calendário e Filtros --- */
 function renderCalendar() {
@@ -226,7 +360,7 @@ function renderCalendar() {
     cell.addEventListener('click', () => {
       selectedDateFilter = thisDate; initRealtimeListener(); renderCalendar();
       if (!window.matchMedia('(min-width: 992px)').matches) {
-          closeFilterModal();
+          closeModal(filterModal);
       }
     });
     calendarEl.appendChild(cell);
@@ -237,19 +371,20 @@ document.getElementById('nextMonth').addEventListener('click', () => { calendarD
 document.getElementById('clearFilter').addEventListener('click', () => {
     selectedDateFilter = null; initRealtimeListener(); renderCalendar();
     if (!window.matchMedia('(min-width: 992px)').matches) {
-        closeFilterModal();
+        closeModal(filterModal);
     }
 });
 document.querySelectorAll('input[name="order"]').forEach(r => r.addEventListener('change', (e) => { orderDirection = e.target.value; initRealtimeListener(); }));
 document.getElementById('deleteDayBtn').addEventListener('click', async () => {
   const day = selectedDateFilter || new Date();
-  if (!confirm(`Deletar TODOS os pedidos do dia ${day.toLocaleDateString('pt-BR')}?`)) return;
+  if (!confirm(`Deletar TODOS os pedidos (ativos e concluídos) do dia ${day.toLocaleDateString('pt-BR')}?`)) return;
   const start = new Date(day); start.setHours(0,0,0,0);
   const end = new Date(start); end.setDate(end.getDate()+1);
   const q = query(pedidosCol, where('horario', '>=', Timestamp.fromDate(start)), where('horario', '<', Timestamp.fromDate(end)));
   const snaps = await getDocs(q);
+  if (snaps.empty) return alert('Nenhum pedido encontrado para este dia.');
   await Promise.all(snaps.docs.map(s => deleteDoc(s.ref)));
-  alert('Pedidos do dia removidos.');
+  alert(`${snaps.size} pedido(s) do dia foram removidos.`);
 });
 
 /* --- Utilitários --- */
@@ -295,7 +430,6 @@ function printTicket(item) {
   </body></html>`);
   win.document.close();
 }
-
 
 // Inicialização
 renderCalendar();

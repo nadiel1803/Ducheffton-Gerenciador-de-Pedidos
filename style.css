@@ -4,6 +4,7 @@
   --accent2: #ff5722;
   --muted: #666;
   --card-bg: #fff;
+  --success: #28a745;
   --radius: 12px;
   --gap: 16px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -30,18 +31,18 @@ body.details-view #detailsPage { transform: translateX(0); }
 .list-page-container {
   display: flex;
   flex-grow: 1;
-  /* Garante que o container ocupe o espaço restante e não ultrapasse a tela */
-  height: calc(100% - 65px); /* Altura da tela menos a altura do topbar */
+  height: calc(100% - 65px);
 }
 
 .sidebar {
-  display: none; /* Escondido por padrão (mobile) */
+  display: none;
   flex-shrink: 0;
   width: 320px;
   padding: var(--gap);
-  overflow-y: auto; /* Permite scroll apenas na sidebar */
+  overflow-y: auto;
   background: #f0f0f0;
   border-right: 1px solid #e5e5e5;
+  padding-bottom: 32px; /* FIX: Adiciona espaço no final para evitar corte */
 }
 .sidebar .card {
   box-shadow: 0 4px 12px rgba(0,0,0,0.04);
@@ -49,7 +50,7 @@ body.details-view #detailsPage { transform: translateX(0); }
 
 .main-content {
   padding: var(--gap);
-  overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
+  overflow-y: auto;
   flex-grow: 1;
 }
 
@@ -63,7 +64,7 @@ body.details-view #detailsPage { transform: translateX(0); }
   -webkit-backdrop-filter: blur(8px);
   position:sticky; top:0; z-index:100;
   flex-shrink: 0;
-  height: 65px; /* Altura fixa para o cálculo de height do container */
+  height: 65px;
 }
 .brand h1{margin:0;font-size:1.3rem;color:var(--accent1)}
 .brand .sub{display:block;font-size:0.8rem;color:var(--muted)}
@@ -78,6 +79,7 @@ body.details-view #detailsPage { transform: translateX(0); }
   margin-bottom:var(--gap);
   border:1px solid rgba(0,0,0,0.03);
 }
+.card h3 { margin: 0 0 16px 0; font-size: 1.1rem; }
 label{display:block;margin-bottom:12px;font-size:0.9rem;font-weight:500;}
 input,textarea,select{
   width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ddd;
@@ -86,53 +88,130 @@ input,textarea,select{
 }
 input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accent1); box-shadow:0 6px 20px rgba(255,138,0,0.12); }
 textarea{resize:vertical; min-height: 80px;}
-.list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 4px;}
+.list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px;}
+
+/* NOVO: Layout do formulário em grid para desktop */
+.form-grid {
+  display: block; /* Padrão para mobile */
+}
 
 /* --- Botões (Btn) --- */
 .btn{
   padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;
-  transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s, background-color 0.15s;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   font-size: 0.9rem;
+  -webkit-tap-highlight-color: transparent; /* Remove highlight de toque no mobile */
 }
 .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
 .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);color:#333;}
 .btn.ghost:hover{background-color:rgba(0,0,0,0.04);}
 .btn:hover{ transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
 .btn:active{ transform: translateY(0px); opacity: 0.9; }
+.btn.success { background-color: var(--success); color: white; border: none; }
+.btn.success:hover { background-color: #218838; }
 .btn.danger{ border-color: #ffdde0; color: #c82121; background: #fff8f8; }
 .btn.danger:hover{ box-shadow: 0 8px 20px rgba(255,82,82,0.12); border-color: #ff5252; }
 .details-actions { margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
 
-/* --- Lista de Pedidos --- */
-.pedidos-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
-.pedido-item{
-  display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;
-  border-left:5px solid var(--accent1);background:var(--card-bg);
-  box-shadow:0 6px 18px rgba(0,0,0,0.04);
-  transition: transform 0.12s, box-shadow 0.12s;
-  cursor:pointer;
+/* --- Lista de Pedidos (Reformulado) --- */
+.pedidos-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap);
 }
-.pedido-item:hover{ transform: translateY(-4px); box-shadow:0 12px 28px rgba(0,0,0,0.07); }
-.pedido-main{flex-grow:1;}
-.pedido-main h4{margin:0;font-size:1.05rem;font-weight:600;}
-.pedido-main .compact-sub { font-size:0.85rem; color:var(--muted); margin-top:6px; }
-.pedido-item::after { content: '›'; font-size: 1.5rem; color: #ccc; }
+.pedido-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  border-left: 5px solid var(--accent1);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.pedido-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.07);
+}
+.pedido-card-header {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.pedido-card-body {
+  font-size: 0.9rem;
+  color: var(--muted);
+  flex-grow: 1;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.pedido-card-body div { margin-bottom: 4px; }
+.pedido-card-footer {
+  margin-top: auto;
+}
+.pedido-card .btn { width: 100%; }
+
+/* --- Pedidos Concluídos no Modal --- */
+#completedList .date-group { margin-bottom: 24px; }
+#completedList .date-header {
+  font-size: 1.1rem; font-weight: bold;
+  padding-bottom: 8px; margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+#completedList .completed-item {
+  display: flex; justify-content: space-between;
+  padding: 8px 4px; border-radius: 6px;
+}
+#completedList .completed-item:nth-child(even) { background-color: rgba(0,0,0,0.03); }
 
 /* --- Helpers --- */
 .row{display:flex;gap:12px;align-items:center;}
 .muted{color:var(--muted)}
 .empty-msg{text-align:center;padding:24px;color:var(--muted);display:none}
 .paid-label { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:700; color:var(--muted); }
+.desktop-hidden { display: initial; } /* Escondido por padrão, mostrado em mobile */
+.mobile-hidden { display: none; } /* Mostrado por padrão, escondido em mobile */
+
 
 /* --- Tela de Login --- */
 .login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;padding:20px;}
 .login-card{width:100%;max-width:380px;background:var(--card-bg);padding:24px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.1);text-align:center;}
-#pinInput{width:220px;text-align:center;font-size:1.2rem;padding:10px;border-radius:10px;letter-spacing:6px;}
+#pinInput{width:220px;text-align:center;font-size:1.4rem;padding:10px;border-radius:10px;letter-spacing:8px; cursor: default;}
+
+/* NOVO: Teclado Numérico */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 240px;
+  margin: 20px auto 0 auto;
+}
+.numpad-key {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+  aspect-ratio: 1 / 1;
+}
+.numpad-key:hover {
+  background-color: #f0f0f0;
+}
+.numpad-key:active {
+  background-color: var(--accent1);
+  color: white;
+  border-color: var(--accent1);
+  transform: scale(0.9);
+}
 
 /* --- Modal de Filtro (Mobile) --- */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1200;}
-.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;backdrop-filter: blur(4px);}
 .modal-dialog{
   position:relative;z-index:1202;max-width:520px;width:94%;background:var(--bg);
   border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.35);
@@ -150,12 +229,73 @@ textarea{resize:vertical; min-height: 80px;}
 .day.selected{background:linear-gradient(180deg,var(--accent2),var(--accent1));color:white;font-weight:700;}
 .calendar-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
 
+
+/* --- Menu Hambúrguer (Mobile) --- */
+.hamburger-menu { display: none; /* Escondido por padrão */ }
+.hamburger-btn {
+  width: 40px; height: 40px; padding: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  gap: 5px; background: transparent; border: none;
+  cursor: pointer; z-index: 1501;
+}
+.hamburger-btn span {
+  display: block; width: 22px; height: 2px;
+  background: #333; border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.mobile-nav {
+  position: fixed; top: 0; right: 0;
+  width: 250px; height: 100%;
+  background: var(--card-bg);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+  padding-top: 80px;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 1500;
+  display: flex; flex-direction: column;
+}
+.mobile-nav .nav-btn {
+  background: none; border: none;
+  padding: 16px 24px; font-size: 1rem;
+  text-align: left; font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+}
+/* Estado Aberto do Menu */
+.hamburger-menu.is-open .hamburger-btn span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger-menu.is-open .hamburger-btn span:nth-child(2) { opacity: 0; }
+.hamburger-menu.is-open .hamburger-btn span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.hamburger-menu.is-open .mobile-nav { transform: translateX(0); }
+
+
 /* --- Layout para Desktop --- */
 @media (min-width: 992px) {
-  #filterBtn {
-    display: none; /* Esconde o botão de filtro no desktop */
+  #filterBtn, #completedBtn, #addPedidoBtn {
+    display: inline-flex;
   }
   .sidebar {
-    display: block; /* Mostra a barra lateral no desktop */
+    display: block;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap);
+  }
+  .form-grid .card {
+    margin-bottom: 0;
+  }
+  .hamburger-menu {
+    display: none;
+  }
+}
+
+/* --- Layout para Mobile --- */
+@media (max-width: 991px) {
+  /* Esconde botões normais e mostra hambúrguer */
+  #filterBtn, #addPedidoBtn, #completedBtn {
+    display: none;
+  }
+  .hamburger-menu {
+    display: block;
   }
 }
