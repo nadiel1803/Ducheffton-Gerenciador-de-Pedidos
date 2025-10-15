@@ -1,8 +1,8 @@
-// firebase.js — inicializa Firebase e exporta apenas o Firestore (db)
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* Sua configuração — mantenha os valores que você já tinha */
+// TODO: Adicione a configuração do seu projeto Firebase aqui
 const firebaseConfig = {
   apiKey: "AIzaSyChkboBPp21hQ_tRFQrV2Hi3iBF-WHxWSE",
   authDomain: "gerenciador-de-pedidos-4ac32.firebaseapp.com",
@@ -10,9 +10,10 @@ const firebaseConfig = {
   storageBucket: "gerenciador-de-pedidos-4ac32.firebasestorage.app",
   messagingSenderId: "674975621927",
   appId: "1:674975621927:web:a09ad1f5c57c2dcb00ff02",
-  measurementId: "G-FWSS1YTR2J"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);

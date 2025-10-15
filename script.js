@@ -1,4 +1,4 @@
-// script.js — versão com todas as funcionalidades implementadas
+// script.js — versão com correções de bugs
 import { db } from './firebase.js';
 import {
   collection, addDoc, onSnapshot, query, orderBy, where, doc, deleteDoc, Timestamp, updateDoc, getDocs
@@ -36,7 +36,6 @@ const deleteBtn = document.getElementById('deleteBtn');
 const filterBtn = document.getElementById('filterBtn');
 const filterModal = document.getElementById('filterModal');
 const filterCloseBtn = document.getElementById('filterCloseBtn');
-const sidebar = document.getElementById('sidebar');
 const filterControls = document.getElementById('filterControls');
 const filterModalBody = filterModal.querySelector('.modal-body');
 
@@ -64,7 +63,7 @@ let unsubscribe = null;
 let calendarDate = new Date();
 calendarDate.setDate(1);
 let currentPedido = null;
-window.pedidosData = []; // Cache global dos pedidos da lista
+window.pedidosData = [];
 
 const pedidosCol = collection(db, 'pedidos');
 
@@ -94,7 +93,7 @@ function showDetailsPage(pedido = null) {
   } else {
     detailsTitle.textContent = 'Novo Pedido';
     pedidoForm.reset();
-    pedidoIdEl.value = ''; // FIX: Garante que o ID é limpo ao criar novo pedido
+    pedidoIdEl.value = '';
     deleteBtn.classList.add('hidden');
     printBtn.classList.add('hidden');
   }
@@ -104,7 +103,6 @@ function showDetailsPage(pedido = null) {
 addPedidoBtn.addEventListener('click', () => showDetailsPage(null));
 backBtn.addEventListener('click', showListPage);
 
-// Event listener para abrir detalhes e marcar como concluído
 pedidosList.addEventListener('click', (e) => {
   const target = e.target;
   const card = target.closest('.pedido-card');
@@ -131,28 +129,16 @@ async function marcarComoConcluido(id) {
     }
 }
 
-
-/* --- Lógica de UI Responsiva para Filtros --- */
-function setupFilterUI() {
-  const isDesktop = window.matchMedia('(min-width: 992px)').matches;
-  if (isDesktop) {
-    sidebar.appendChild(filterControls);
-    filterControls.classList.remove('hidden');
-    filterModal.classList.add('hidden');
-  } else {
-    document.body.appendChild(filterControls);
-    filterControls.classList.add('hidden');
-  }
-}
-window.addEventListener('resize', setupFilterUI);
-window.addEventListener('DOMContentLoaded', setupFilterUI);
-
 /* --- Lógica dos Modais (Filtro e Concluídos) --- */
-function openModal(modalEl) { modalEl.classList.remove('hidden'); }
-function closeModal(modalEl) { modalEl.classList.add('hidden'); }
+function openModal(modalEl) { modalEl.classList.remove('hidden'); modalEl.setAttribute('aria-hidden', 'false'); }
+function closeModal(modalEl) { modalEl.classList.add('hidden'); modalEl.setAttribute('aria-hidden', 'true'); }
 
 // Filtro
-filterBtn.addEventListener('click', () => { filterModalBody.appendChild(filterControls); filterControls.classList.remove('hidden'); openModal(filterModal); });
+filterBtn.addEventListener('click', () => {
+  filterModalBody.appendChild(filterControls);
+  filterControls.classList.remove('hidden');
+  openModal(filterModal);
+});
 filterCloseBtn.addEventListener('click', () => closeModal(filterModal));
 filterModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(filterModal));
 
@@ -168,7 +154,6 @@ mobileAddPedidoBtn.addEventListener('click', () => { closeMobileMenu(); showDeta
 mobileFilterBtn.addEventListener('click', () => { closeMobileMenu(); filterBtn.click(); });
 mobileCompletedBtn.addEventListener('click', () => { closeMobileMenu(); completedBtn.click(); });
 
-
 /* --- Autenticação com Teclado Numérico --- */
 if (!sessionStorage.getItem('loggedIn') && !localStorage.getItem('loggedIn')) {
   showLogin();
@@ -179,10 +164,8 @@ if (!sessionStorage.getItem('loggedIn') && !localStorage.getItem('loggedIn')) {
 numpad.addEventListener('click', (e) => {
     const key = e.target.closest('.numpad-key');
     if (!key) return;
-
     const action = key.dataset.action;
     const currentVal = pinInput.value;
-
     if (action === 'backspace') {
         pinInput.value = currentVal.slice(0, -1);
     } else if (action === 'clear') {
@@ -230,7 +213,7 @@ pedidoForm.addEventListener('submit', async (e) => {
       await updateDoc(doc(db, 'pedidos', id), data);
     } else {
       data.criadoEm = Timestamp.now();
-      data.status = 'active'; // Novo campo de status
+      data.status = 'active';
       await addDoc(pedidosCol, data);
     }
     showListPage();
@@ -250,9 +233,7 @@ deleteBtn.addEventListener('click', async () => {
 /* --- Listener do Firebase e Renderização --- */
 function initRealtimeListener() {
   if (unsubscribe) unsubscribe();
-  
   let constraints = [where('status', '==', 'active'), orderBy('horario', orderDirection)];
-  
   if (selectedDateFilter) {
     const start = new Date(selectedDateFilter); start.setHours(0, 0, 0, 0);
     const end = new Date(start); end.setDate(end.getDate() + 1);
@@ -263,12 +244,13 @@ function initRealtimeListener() {
       orderBy('horario', orderDirection)
     ];
   }
-  
   const q = query(pedidosCol, ...constraints);
-  
   unsubscribe = onSnapshot(q, snapshot => {
     window.pedidosData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderPedidos(window.pedidosData);
+  }, (error) => {
+      console.error("Erro no listener de pedidos ativos:", error);
+      alert("Não foi possível carregar os pedidos ativos. Verifique o console para mais detalhes.");
   });
 }
 
@@ -300,47 +282,48 @@ function renderPedidos(items) {
 
 async function renderCompletedPedidos() {
     completedList.innerHTML = '<p>Carregando...</p>';
-    const q = query(pedidosCol, where('status', '==', 'completed'), orderBy('horario', 'desc'));
-    const snapshot = await getDocs(q);
-    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    try {
+        const q = query(pedidosCol, where('status', '==', 'completed'), orderBy('horario', 'desc'));
+        const snapshot = await getDocs(q);
+        const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    if (items.length === 0) {
-        completedList.innerHTML = '<p class="muted" style="text-align:center;">Nenhum pedido concluído encontrado.</p>';
-        return;
+        if (items.length === 0) {
+            completedList.innerHTML = '<p class="muted" style="text-align:center;">Nenhum pedido concluído encontrado.</p>';
+            return;
+        }
+
+        const groupedByDate = items.reduce((acc, item) => {
+            const dateStr = item.horario.toDate().toLocaleDateString('pt-BR');
+            if (!acc[dateStr]) acc[dateStr] = [];
+            acc[dateStr].push(item);
+            return acc;
+        }, {});
+
+        for (const date in groupedByDate) {
+            groupedByDate[date].sort((a, b) => a.horario.toMillis() - b.horario.toMillis());
+        }
+
+        let html = '';
+        for (const dateStr of Object.keys(groupedByDate)) {
+            html += `<div class="date-group">`;
+            html += `<h4 class="date-header">${dateStr}</h4>`;
+            groupedByDate[dateStr].forEach(item => {
+                const horarioStr = item.horario.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                html += `
+                    <div class="completed-item">
+                        <span><strong>${horarioStr}</strong> - ${escapeHtml(item.nome)}</span>
+                        <span>R$ ${Number(item.valor || 0).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        completedList.innerHTML = html;
+    } catch (error) {
+        console.error("Erro ao buscar pedidos concluídos:", error);
+        completedList.innerHTML = `<p class="muted" style="text-align:center; color: #c82121;"><b>Erro ao carregar pedidos.</b><br>Verifique se o índice do Firestore foi criado corretamente e tente novamente.</p>`;
     }
-
-    // Agrupar por data
-    const groupedByDate = items.reduce((acc, item) => {
-        const dateStr = item.horario.toDate().toLocaleDateString('pt-BR');
-        if (!acc[dateStr]) acc[dateStr] = [];
-        acc[dateStr].push(item);
-        return acc;
-    }, {});
-
-    // Ordenar os pedidos dentro de cada dia por horário crescente
-    for (const date in groupedByDate) {
-        groupedByDate[date].sort((a, b) => a.horario.toMillis() - b.horario.toMillis());
-    }
-
-    let html = '';
-    // As chaves já estão em ordem decrescente por causa da query inicial do Firebase
-    for (const dateStr of Object.keys(groupedByDate)) {
-        html += `<div class="date-group">`;
-        html += `<h4 class="date-header">${dateStr}</h4>`;
-        groupedByDate[dateStr].forEach(item => {
-            const horarioStr = item.horario.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            html += `
-                <div class="completed-item">
-                    <span><strong>${horarioStr}</strong> - ${escapeHtml(item.nome)}</span>
-                    <span>R$ ${Number(item.valor || 0).toFixed(2)}</span>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-    completedList.innerHTML = html;
 }
-
 
 /* --- Calendário e Filtros --- */
 function renderCalendar() {
@@ -359,9 +342,7 @@ function renderCalendar() {
     if (selectedDateFilter && thisDate.toDateString() === selectedDateFilter.toDateString()) cell.classList.add('selected');
     cell.addEventListener('click', () => {
       selectedDateFilter = thisDate; initRealtimeListener(); renderCalendar();
-      if (!window.matchMedia('(min-width: 992px)').matches) {
-          closeModal(filterModal);
-      }
+      closeModal(filterModal);
     });
     calendarEl.appendChild(cell);
   }
@@ -370,9 +351,7 @@ document.getElementById('prevMonth').addEventListener('click', () => { calendarD
 document.getElementById('nextMonth').addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); });
 document.getElementById('clearFilter').addEventListener('click', () => {
     selectedDateFilter = null; initRealtimeListener(); renderCalendar();
-    if (!window.matchMedia('(min-width: 992px)').matches) {
-        closeModal(filterModal);
-    }
+    closeModal(filterModal);
 });
 document.querySelectorAll('input[name="order"]').forEach(r => r.addEventListener('change', (e) => { orderDirection = e.target.value; initRealtimeListener(); }));
 document.getElementById('deleteDayBtn').addEventListener('click', async () => {

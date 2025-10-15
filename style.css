@@ -27,31 +27,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:#111;overflow-x:hidden
 body.details-view #listPage { transform: translateX(-30%); opacity: 0.8; }
 body.details-view #detailsPage { transform: translateX(0); }
 
-/* --- Layout da Página de Lista (Sidebar + Conteúdo) --- */
+/* --- Layout da Página de Lista --- */
 .list-page-container {
   display: flex;
   flex-grow: 1;
   height: calc(100% - 65px);
 }
 
-.sidebar {
-  display: none;
-  flex-shrink: 0;
-  width: 320px;
-  padding: var(--gap);
-  overflow-y: auto;
-  background: #f0f0f0;
-  border-right: 1px solid #e5e5e5;
-  padding-bottom: 32px; /* FIX: Adiciona espaço no final para evitar corte */
-}
-.sidebar .card {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-}
-
 .main-content {
   padding: var(--gap);
   overflow-y: auto;
   flex-grow: 1;
+  width: 100%;
 }
 
 /* --- Barra Superior (Topbar) --- */
@@ -90,9 +77,8 @@ input:focus,textarea:focus,select:focus { outline:none; border-color:var(--accen
 textarea{resize:vertical; min-height: 80px;}
 .list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px;}
 
-/* NOVO: Layout do formulário em grid para desktop */
 .form-grid {
-  display: block; /* Padrão para mobile */
+  display: block;
 }
 
 /* --- Botões (Btn) --- */
@@ -101,7 +87,7 @@ textarea{resize:vertical; min-height: 80px;}
   transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s, background-color 0.15s;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   font-size: 0.9rem;
-  -webkit-tap-highlight-color: transparent; /* Remove highlight de toque no mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
 .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);color:#333;}
@@ -114,7 +100,7 @@ textarea{resize:vertical; min-height: 80px;}
 .btn.danger:hover{ box-shadow: 0 8px 20px rgba(255,82,82,0.12); border-color: #ff5252; }
 .details-actions { margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
 
-/* --- Lista de Pedidos (Reformulado) --- */
+/* --- Lista de Pedidos --- */
 .pedidos-grid{
   display:grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -171,16 +157,13 @@ textarea{resize:vertical; min-height: 80px;}
 .muted{color:var(--muted)}
 .empty-msg{text-align:center;padding:24px;color:var(--muted);display:none}
 .paid-label { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:700; color:var(--muted); }
-.desktop-hidden { display: initial; } /* Escondido por padrão, mostrado em mobile */
-.mobile-hidden { display: none; } /* Mostrado por padrão, escondido em mobile */
-
 
 /* --- Tela de Login --- */
 .login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;padding:20px;}
 .login-card{width:100%;max-width:380px;background:var(--card-bg);padding:24px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.1);text-align:center;}
 #pinInput{width:220px;text-align:center;font-size:1.4rem;padding:10px;border-radius:10px;letter-spacing:8px; cursor: default;}
 
-/* NOVO: Teclado Numérico */
+/* Teclado Numérico */
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -209,7 +192,7 @@ textarea{resize:vertical; min-height: 80px;}
   transform: scale(0.9);
 }
 
-/* --- Modal de Filtro (Mobile) --- */
+/* --- Modais --- */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1200;}
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1201;backdrop-filter: blur(4px);}
 .modal-dialog{
@@ -229,9 +212,8 @@ textarea{resize:vertical; min-height: 80px;}
 .day.selected{background:linear-gradient(180deg,var(--accent2),var(--accent1));color:white;font-weight:700;}
 .calendar-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
 
-
 /* --- Menu Hambúrguer (Mobile) --- */
-.hamburger-menu { display: none; /* Escondido por padrão */ }
+.hamburger-menu { display: none; }
 .hamburger-btn {
   width: 40px; height: 40px; padding: 0;
   display: flex; flex-direction: column;
@@ -261,21 +243,13 @@ textarea{resize:vertical; min-height: 80px;}
   text-align: left; font-weight: 600;
   border-bottom: 1px solid #f0f0f0;
 }
-/* Estado Aberto do Menu */
 .hamburger-menu.is-open .hamburger-btn span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .hamburger-menu.is-open .hamburger-btn span:nth-child(2) { opacity: 0; }
 .hamburger-menu.is-open .hamburger-btn span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 .hamburger-menu.is-open .mobile-nav { transform: translateX(0); }
 
-
 /* --- Layout para Desktop --- */
 @media (min-width: 992px) {
-  #filterBtn, #completedBtn, #addPedidoBtn {
-    display: inline-flex;
-  }
-  .sidebar {
-    display: block;
-  }
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -284,14 +258,10 @@ textarea{resize:vertical; min-height: 80px;}
   .form-grid .card {
     margin-bottom: 0;
   }
-  .hamburger-menu {
-    display: none;
-  }
 }
 
 /* --- Layout para Mobile --- */
 @media (max-width: 991px) {
-  /* Esconde botões normais e mostra hambúrguer */
   #filterBtn, #addPedidoBtn, #completedBtn {
     display: none;
   }
